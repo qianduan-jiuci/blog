@@ -24,6 +24,7 @@
     "lodash": "^4.17.21",
     "prettier": "^3.0.3",
     "vite": "^4.4.9",
+    "vite-plugin-vitepress-auto-sidebar": "^1.6.0",
     "vue": "^3.3.4"
   },
   "directories": {

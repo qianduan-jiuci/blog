@@ -15,5 +15,9 @@ export const navConfig = [
     text: '工具列表',
     items: toolsNav,
   },
+  {
+    text: '设计模式',
+    link: '/designPattern/',
+  },
   { text: 'Changelog', link: 'https://github.com/qianduan-jiuci' },
 ] as DefaultTheme.NavItem[]
