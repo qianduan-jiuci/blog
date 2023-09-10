@@ -5,6 +5,7 @@ import { sidebar } from './sidebar'
 export default defineConfig({
   title: '九辞',
   description: '那个曾经的少年回来了',
+  base: '/blog/',
   lastUpdated: true,
   head: [
     [
