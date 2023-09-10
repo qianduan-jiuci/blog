@@ -1,0 +1,29 @@
+{
+  "name": "vitepress",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "vitepress": "1.0.0-rc.10"
+  },
+  "dependencies": {
+    "@types/lodash": "^4.14.198",
+    "@types/node": "^20.6.0",
+    "eslint": "^8.49.0",
+    "lodash": "^4.17.21",
+    "prettier": "^3.0.3",
+    "vite": "^4.4.9",
+    "vue": "^3.3.4"
+  }
+}
