@@ -9,4 +9,8 @@ export const problemNav = [
       },
     ],
   },
+  {
+    text: 'Git',
+    link: '/problems/git/',
+  },
 ] as DefaultTheme.NavItemChildren[]
