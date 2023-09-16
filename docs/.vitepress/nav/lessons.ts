@@ -19,6 +19,10 @@ export const guideNav = [
         text: 'Git',
         link: '/lessons/git/',
       },
+      {
+        text: 'nestjs',
+        link: '/lessons/nestjs/',
+      },
     ],
   },
 ] as DefaultTheme.NavItemChildren[]
