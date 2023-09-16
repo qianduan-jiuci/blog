@@ -11,6 +11,10 @@ export const toolsNav = [
         text: 'JSON Server',
         link: '/tools/jsonServer/',
       },
+      {
+        text: 'tmux',
+        link: '/tools/tmux/',
+      },
     ],
   },
 ] as DefaultTheme.NavItemChildren[]
