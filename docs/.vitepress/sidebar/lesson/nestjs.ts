@@ -46,8 +46,12 @@ const Nestjs = {
       link: '/lessons/nestjs/表单验证',
     },
     {
-      text: '鉴权',
-      link: '/lessons/nestjs/鉴权',
+      text: '登录注册',
+      link: '/lessons/nestjs/登录注册',
+    },
+    {
+      text: '身份认证',
+      link: '/lessons/nestjs/身份认证',
     },
     {
       text: '拦截器',
