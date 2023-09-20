@@ -1,0 +1,5 @@
+# Prisma
+Prisma是ORM框架， 基于sql语句进一步封装的框架，使用的时候可以不用写sql语句，
+ORM框架会在框架内部根据自身的语法转化成与之对应的sql语句
+
+其他著名ORM框架还有TypeORM

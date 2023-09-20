@@ -13,4 +13,13 @@ export const problemNav = [
     text: 'Git',
     link: '/problems/git/',
   },
+  {
+    text: 'nestjs',
+    items: [
+      {
+        text: 'prisma',
+        link: '/problems/prisma/',
+      },
+    ],
+  },
 ] as DefaultTheme.NavItemChildren[]
