@@ -1,7 +1,7 @@
 import { DefaultTheme } from 'vitepress'
 export const toolsNav = [
   {
-    text: '模拟数据',
+    text: '第三方库集合',
     items: [
       {
         text: 'mockjs',
@@ -14,6 +14,10 @@ export const toolsNav = [
       {
         text: 'tmux',
         link: '/tools/tmux/',
+      },
+      {
+        text: '代码格式化',
+        link: '/tools/format/',
       },
     ],
   },
