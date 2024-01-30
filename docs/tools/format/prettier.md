@@ -77,3 +77,6 @@ npx mrm lint-staged
   }
 }
 ````
+
+**注意** 配置文件是有优先级的，实测：独立的配置文件 (editorconfig)>vscode工作区配置>vscode用户配置
+![Alt text](image-1.png)
