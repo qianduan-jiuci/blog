@@ -4,10 +4,16 @@
 对于开发阶段的构建性能问题，Vite内部已经做了很多相当多的优化，实现了`项目秒启动`和`零毫秒级热更新`。
 本文主要针对线上环境的`项目加载性能优化`，与页面的 FCP(First Contentful Paint)、TTI 等指标。
 
-注意：性能优化中的FP,FCP,FMP,DCL，LCP可以私下了解
-## FP,FCP,FMP,DCL
-### FP
-FP：First Paint， 即渲染的第一个像素点，FP一般在HTML解析完成或者解析一部分的时候触发
-FCP：First contentful Paint, 即渲染的第一个内容，这里的内容可以指文本、图片、canvas等等
-FMP：First Meaningful Paint，首次渲染有意义的内容的时间，FMP定义的方式也很复杂。
-LCP：largest contentful Paint， 最大内容渲染时间
+对于Vite项目的加载性能优化，常见的优化手段重点关注下面三个方面：
+
+- 网络优化。包括 HTTP2、DNS 预解析、Preload、Prefetch等手段。
+- 资源优化。包括构建产物分析、资源压缩、产物拆包、按需加载等优化方式。
+- 预渲染优化，本文主要介绍服务端渲染(SSR)和静态站点生成(SSG)两种手段。
+
+不过，无论是以上哪一类优化方式，都离不开构建工具的支持，也就是说，在这些性能优化的场景中，我们将高频地使用到 Vite，对 Vite 本身的构建能力进行深度地应用或者定制。
+
+## 网络优化
+
+## 资源优化
+
+## 预渲染优化
