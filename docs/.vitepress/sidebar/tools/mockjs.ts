@@ -5,6 +5,10 @@ const mockjsSide = {
     {
       link: '/tools/mockjs/index',
     },
+    {
+      text: '开始&安装',
+      link: '/tools/mockjs/start',
+    },
   ],
 } as DefaultTheme.SidebarItem
 

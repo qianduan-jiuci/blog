@@ -4,6 +4,7 @@ import { problemNav } from './problems'
 import { toolsNav } from './tools'
 import { viteProjectNav } from './viteProject'
 import { reactProjectNav } from './reactProject'
+import { engineeNav } from './enginee'
 export const navConfig = [
   {
     text: '学习指南',
@@ -12,6 +13,10 @@ export const navConfig = [
   {
     text: '常见问题',
     items: problemNav,
+  },
+  {
+    text: '前端工程化',
+    items: engineeNav,
   },
   {
     text: '工具列表',
