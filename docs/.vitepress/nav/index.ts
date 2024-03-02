@@ -27,6 +27,10 @@ export const navConfig = [
     link: '/designPattern/',
   },
   {
+    text: '面试题',
+    link: '/interview/',
+  },
+  {
     text: 'vite项目',
     items: viteProjectNav,
   },

@@ -6,6 +6,7 @@ import design from './design'
 import project from './project'
 import optimiSide from './optimi'
 import engineeSide from './enginee'
+import interview from './interview'
 const sidebar = {
   ...lesson,
   ...tool,
@@ -14,6 +15,7 @@ const sidebar = {
   ...project,
   ...optimiSide,
   ...engineeSide,
+  ...interview,
 } as DefaultTheme.Sidebar
 
 export { sidebar }
