@@ -1,5 +1,5 @@
 # js面试题
-## 小数运算不精确的根源
+## 01.小数运算不精确的根源
 这并不算是js的缺陷，其实是早期语言(遵循IEEE754规范的语言)都有的问题，因为在处理小数的时候，计算机会遇到一些难题，我们会想当然的认为，`小数运算就小数运算嘛，不精确就不精确嘛，为什么有的精确有的不精确？`
 
 计算机在进行数字运算的时候，是需要转成二进制运算的，一转二进制就要出问题。 
@@ -34,7 +34,7 @@
 
 
 
-## js计时器是否精确？ 为什么？
+## 02.js计时器是否精确？ 为什么？
 肯定是不精确的
 至于为什么要从下面四个方面解释
 - 硬件
@@ -51,3 +51,91 @@ w3c标准表明计时嵌套层级如果大于了五层，那么它的计时间�
 ### 事件循环
 不管是settimeout还是setinterval，都是在任务队列中等待执行的，时间到了只能说明是进入到了任务队列中了，还需要等待，这个时间也是不精确的
 
+## 03.js的数据类型有哪些？
+基本数据类型：null、undefined、string、number、boolean，symbol、bigint
+引用数据类型：object
+
+## 04.原型的作用是什么？
+
+之所以存在原型，是因为js要实现面向对象，而在es6之前，实现面向对象的方式就是通过原型，一个能支持面向对象的语言必须要做到一点：能判定一个实例的类型。在js中，通过原型就能知晓某个对象属于哪个类型，换句话说，`原型的存在就是为了避免类型的丢失`。
+ 
+
+实现面向对象只有两种方式：类型元数据（传统后端语言：java， c#）、原型
+不管是什么方式实现的面向对象：`都是为了保证对象的类型可溯()`
+
+
+## 05.GET和Post的区别？
+1. 协议层面(HTTP)： 语义区别
+      在http协议里面，get和post只是请求报文中的第一个单词，只是起到一个语义的作用 
+2. 应用层面：GET请求体为空
+3. 浏览器层面：1.2.3.4.5.6.7.8.9。。。
+
+
+## 06.Promis解决了什么问题？ 
+Promise最重要的就是`统一js中的异步实现方案`
+异步是js中常见的一种场景，统一实现方案，不仅可以有效降低心智负担、更重要的是可以让不同的异步场景进行相互联动。
+Promise也无法消除回调，他只不过是通过链式调用的方式让回调变得进行可控
+## 07.**null和undefine的区别**
+
+
+## 08.Proxy和Object.defineProperty的区别
+
+八股文：
+1. Proxy是对整个对象的代理，而Object.defineProperty只能代理某个属性。
+2. 对象上新增属性，Proxy可以监听到，Object.defineProperty不能。
+3. 数组新增修改，Proxy可以监听到，Object.defineProperty不能。
+4. 若对象内部属性要全部递归代理，Proxy可以只在调用的时候递归，而Object.definePropery需要一次完成所有递归，性能比Proxy差。
+5. Proxy不兼容IE，Object.defineProperty不兼容IE8及以下
+6. Proxy使用上比Object.defineProperty方便多。
+
+
+延申：  
+Proxy是可以做到拦截和重定义对象的基本操作
+[proxy官方文档](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy)
+Proxy和Object.defineProperty最大的区别在于proxy可以拦截所有的基本操作，而Object.defineProperty只是基本操作中的其中一个
+实际上当开发人员写的对对象的操作，包括增删改查在内部都会转成一个函数，这个函数就是对象的基本操作，对于`对象有哪些基本操作在ECMA262官方文档中`写的有
+基本操作共有十一种，如果该对象是函数，会多出来两种（[[call]] | [[constructor]]）;调用方法用的是[[call]],使用new实例化的时候会被转调用[[constructor]]
+
+````js
+const obj = {
+  name: 'jiuci'
+}
+
+obj.name 
+obj["name"] //点操作和中括号操作都会被转成`[[GET]]`(基本操作)
+
+obj.name = 'qianduanjiuci'; //会被转成[[SET]]
+
+delete obj.name; //会被转成[[DELETE]]
+
+for(let key in obj) { // 会被转成[[OwnPropertyKeys]]
+  console.log(key)
+}
+````
+
+
+在Proxy中，对象的每一个基本操作都对应着proxy中的陷阱函数
+
+陷阱函数：通过一个代理，去读属性的时候，他应该运行的是内部的[[Get]]方法，转而掉入到proxy中的get方法中运行去了，没有去运行他内部的基本操作，这就是陷阱
+
+`总结：Proxy拦截的是所有的基本操作，而Object.defineProperty什么都不拦截，他只是众多基本操作中的其中一个。`
+
+
+
+## 09.什么是Promise 
+说起Promise从以下两方面来说：
+- PromiseA+规范
+
+PromiseA+规范是在2015年之前出来的一套社区方案，但是很多第三方库都接纳了这种方案，该规范中说明了`什么是Promise?`:`一个对象中带有then方法，那这个对象就是Promise`
+但是当ES6出来之后，新出了一个构造函数Promise，当使用new Promise的时候，生成的这个对象就是Promise并且这个Promise满足这个A+规范
+
+PromiseA+规范写了什么？
+- `通篇都在告诉你：then方法应该实现什么样的功能，他接收什么样的参数，它里面应该怎么处理，以及他应该返回什么？`
+- PromiseA+规范中有这么一个说法，只要你是一个Promise，你就可以互操作
+
+比如：`Jquery中的$.ajax(), 他的返回值就是一个promise，只不过这个promise并不是通过构造函数new出来的，他其实是手写了一套符合PromiseA+规范的Promise`
+
+`Promise下的catch方法，finally方法，包括他的all方法、race方法，这些其实都不是PromiseA+规范里面的，都是ES6中新加的`
+
+
+终极解读：`当有一个符合PromiseA+规范的then方法的对象，那么这个对象就是一个Promise，而ES6出现之后，它带来了一个构造函数，可以创建一个满足PromiseA+规范的Promise对象`

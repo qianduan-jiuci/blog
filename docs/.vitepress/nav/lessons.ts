@@ -4,6 +4,10 @@ export const guideNav = [
     text: '系统课程',
     items: [
       {
+        text: 'CSS',
+        link: '/lessons/css/',
+      },
+      {
         text: 'Javascript',
         link: '/lessons/js/',
       },
