@@ -654,16 +654,245 @@ Reflect.get(obj, 'c', {a:3, b:4}) // 7
 
 
 ## 31. js实现继承的方式有哪些？以及他的优缺点？
-> 原型链继承
-> 构造函数继承
-> 组合式继承
->
+### 1. 原型链继承
+> 原理：通过将子类的构造函数原型指向父类的实例
+> 缺点：
+> 所有子类的实例会共享父类引用属性
+````js
+    function Parent() {
+      this.name = 'parent'
+    }
+    Parent.prototype.sayHello = function() {
+      console.log(`hello , I'm ${this.name}`);
+    }
+
+    function Child() {
+
+    }
+
+    // 通过原型链设置继承-原理：将子类的函数原型指向父类的实例
+    Child.prototype = new Parent()
+    console.log(new Child().eat());
+   console.log(new Child().name); // 缺点，共享父类中的属性
+````
+### 2. 构造函数继承
+> 原理：在子类的构造函数中调用父类的构造函数
+> 缺点：这样可以避免原型链继承中的属性共享的问题，但父类的方法不会被继承到子类原型中
+````js
+    function Parent() {
+      this.name = 'parent'
+      this.age = '54'
+    }
+    Parent.prototype.sayHello = function() {
+      console.log(`hello , I'm ${this.name}`);
+    }
+    function Child() {
+      Parent.call(this)
+      this.name = "child"
+    }
+    new Child().sayHello(); //并没有将父类的方法继承到子类的原型上
+    console.log(new Child().age);
+````
+### 3. 组合式继承
+> 原理：通过使用原型链继承的方式来继承方法，通过使用构造函数继承的方式来继承属性
+> 缺点：会两次调用父类构造函数，造成性能浪费
+````js
+    function Parent() {
+      this.name = 'parent'
+      this.info = {
+        a:1
+      }
+    }
+    Parent.prototype.sayHello = function() {
+      console.log(`hello, I'm ${this.name}`);
+    }
+
+    function Child() {
+      this.name = "child"
+    }
+
+    // 通过原型链设置继承-原理：将子类的函数原型指向父类的实例
+    Child.prototype = new Parent()
+    const child = new Child()
+    const parent = new Parent()
+    console.log(child.sayHello());
+    console.log(child.info); 
+    parent.info.a = 2
+    console.log(child.info);
+    // 可见：父类实例的info属性是独立的,没有和子类实例的引用的是同一块地址
+````
+### 4. 原型式继承
+> 原理：通过借助一个已经存在的模板来创建新对象，新对象可以继承模板中的属性和方法
+> 缺点：对于引用属性仍然是浅拷贝，修改新对象的属性，同样也会修改模板中的数据
+
+````js
+    const parent = {
+      name: 'Parent',
+      info: {
+        age: 54
+      },
+      sayHello: function() {
+        console.log(`hello I'm ${this.name}`);
+      }
+    }
+
+    const child = Object.create(parent);
+    child.name = 'Child';
+    child.info.age = 55 //浅拷贝
+    console.log(parent.info);
+    child.sayHello()
+````
+### 5. 寄生式继承
+> 原理：利用一个函数来完成继承，当然也需要一个模板，但是在函数中进行继承的时候，会添加一些额外的属性和方法
+> 缺点：还是逃脱不了对引用类型的属性的时候，回去修改模板中的数据
+````js
+    const parent = {
+      name: 'Parent',
+      info: {
+        age: 54
+      },
+      sayHello: function() {
+        console.log(`hello I'm ${this.name}`);
+      }
+    }
+    function
+    const child = Object.create(parent);
+    child.name = 'Child';
+    child.info.age = 55 //浅拷贝
+    console.log(parent.info);
+    child.sayHello()
+````
+### 6. 组合寄生继承
+> 原理：我们将组合继承和寄生式继承结合起来，得出了寄生组合式的继承，这也是所有继承方式里面相对最优的继承方式
+````js
+  function Parent() {
+    this.name = 'parent';
+    this.play = [1, 2, 3];
+  }
+  Parent.prototype.getName = function () {
+    return this.name;
+  }
+  function Child() {
+    Parent.call(this);
+    this.friends = 'child';
+  }
+​
+  function clone (parent, child) {
+    // 这里改用 Object.create 就可以减少组合继承中多进行一次构造的过程
+    child.prototype = Object.create(parent.prototype);
+    child.prototype.constructor = child;
+  }
+​
+  clone(Parent, Child);
+  Child.prototype.getFriends = function () {
+    return this.friends;
+  }
+​
+  let person6= new Child();
+  console.log(perso);
+  console.log(person.getName());
+  console.log(person.getFriends());
+​
+// 它可以解决组合继承 父类被调用两次和在不同层级属性重复的问题。
+````
+### 7. extends
+>  extends  
+ 
+
 ## 32. 深拷贝和浅拷贝？
+> js在存储变量的时候，变量都是存储在栈内存中，如果该变量的值类型是原始数据类型，那么该值也是存储在栈中，但如果是引用数据类型的话，会在堆中开辟一个新的内存空间，栈中的变量指向这块地址
+
+> 常说的深浅拷贝其实就是在说的js在拷贝引用数据类型的模式
+
+> 浅拷贝：新对象的属性和源对象的属性指向同一块内存空间
+> 深拷贝：新对象的属性和源对象的属性不会共用同一块内存空间
+
 ## 33. defer和async以及link下的preload和prefetch区别？
+这四种都是资源提示符
+只是defer和async作用在script元素上
+preload和prefetch是作用到link元素上
+### defer和async
+![async|defer](image-5.png)
+当如果不给js文件添加资源提示符的时候，当浏览器解析到script标签的时候，他会去等待js的下载，等到下载完成之后，执行js，然后才会去解析后续的dom元素
+在浏览器进行等待的过程中就造成了线程阻塞，极大浪费了浏览器的性能
+所以为了解决阻塞的问题，浏览器推出了资源提示符的说法，采用了异步的方式解决这问题
+
+> async的原理：当浏览器遇到script标签带着async属性的时候，会立马通知网络线程进行下载js，而主线程转而继续解析后续的dom，等到网络线程下载完之后，主线程才会去执行js，这样会有一个问题，每次加载页面的时候，会导致js文件的执行时机不可控，这跟网络的快慢有关，也跟浏览器解析dom的快慢有关
+
+
+> defer原理： 浏览器也会通知网络线程去下载js，但是和async不同的是，js文件执行的时机，带有defer资源提示符的js文件，会等到全部的dom解析完成之后才回去执行js
+
+### preload和prefetch
+和defer和async一样都是为了保证主线程不阻塞，同样是异步的解决方案
+![preload|prefetch](image-4.png)
+二者细微的区别是优先级的区别
+> preload：优先级比较高，如果这时候网络线程中还有别的任务需要下载，那么你先等等，先让这个proload的资源先下载， 通常都是用在本页需要的资源上面添加
+> prefetch：优先级比较低，只有当网络线程空闲的时候才会去下载，一般在单页面应用程序中下载其他页面中的资源
+
 ## 34. localStorage、sessionStorage、cookie的区别？
-## 35. 事件委托、事件冒泡、事件捕获
+>存放数据大小来说： cookie通常在4kb左右，而localstorage和sessionStorage通常在5MB左右
+
+> 数据的生命周期： 一般由服务器生成，可设置过期时间，如果在浏览器中生成cookie，默认关闭浏览器cookie清除， 而sessionStoage的生命周期为当前会话，标签页关闭的时候即清除数据localStorage除非被手动清除，否则永久生效
+
+> 与服务端通信：请求头中自动携带cookie，发送服务器，服务器进行验证身份，但是如果cookie保存的数量过多，会导致网络请求变慢，带来性能问题，而localStorage和SessionStorage只存在于客户端
+## 35. 事件流、事件委托、事件冒泡、事件捕获
+> 事件流：事件在发生时，会在目标节点和根节点之间按照特定的顺序进行传播，那传播所经过路径上的所有节点都会接收到这个事件，这个过程就叫做事件流，也就是在页面中接受事件的顺序。
+
+> 事件流分为两种事件流模型，冒泡流和捕获流
+
+冒泡流和捕获流的顺序是相反的。
+
+冒泡流就是从目标节点到根节点的传播顺序。目标节点最先接收事件，文档节点最后接受事件。
++.
+事件委托就是根据事件冒泡的特性，使用事件委托可以提高用户的性能，比如监听多个子节点的事件，可以通过利用事件委托
 ## 36. 描述一下浏览器缓存、服务器缓存、cdn缓存
+### 浏览器缓存：
+
 ## 37. 如何进行数组扁平化
+1. 递归
+2. reduce
+3. 扩展运算符
+4. flat
 ## 38. sort的实现原理
+> 这是js中的一种排序方法，对数组进行排序，默认情况下根据字符串的Unicode码点进行排序
+
+> 实现原理： 在Chrome源码中，之前对于该sort方法只提供了插排和快排的两种方式，当数组数量小于10的时候，进行的是插排，数组数量大于10的时候，会选用快排，目前采用的是冒泡排序
 ## 39. es5中新出的数组遍历方法，以及他们之间的一个区别
-## 40. js模式的分类以及区别？标准模式，松散模式、严格模式
+arr.foreach
+arr.map
+arr.filter
+arr.fill
+arr.some
+arr.any
+arr.every
+arr.reduce
+
+分类：返回值类型
+返回一个新数组：arr.map、arr.filter
+返回布尔：arr.some、arr.every 不改变原数组
+无返回值：arr.foreach
+
+## 40. js模式的分类以及区别？标准模式、严格模式
+## 41. 如何将伪数组转换成数组
+Array.form(arguments)
+Object.prototype.slice.call(arguments)
+## 42. 什么是生成器（Genreator）
+Generator是ES6中引入的一个函数，它是js实现异步编程的方案之一，它可以通过yield关键字来暂停函数的执行，并在下一次调用的时候从暂停的位置开始，Generator函数返回一个迭代器对象，用`function* generator(){}`表示，可以用于异步编程中
+## 43. 什么是迭代器（Interator）
+Interator是ES6中引入的一种新的遍历机制，他可以用来遍历任何数据结构，Interator是一个方法，他提供了next方法，每次调用next方法，都会返回一个包含两个属性的对象：{value，done}，value表示当前遍历的值，done是一个布尔，用来表示遍历是否结束，forof内部使用的原理就是迭代器
+
+根据W3C中的可迭代协议：要成为可迭代对象，必须要实现@@Interator方法，这意味着对象（或者它原型链上的某个对象）必须有一个键为 @@iterator 的属性，可通过常量 Symbol.iterator 访问该属性
+
+内部可迭代对象有：String，Array， TypeArray，Map，Set
+
+
+一些表达式期望可迭代对象：数组的解构、forof循环、扩展运算符...，
+````js
+const obj = {
+  a:1,
+  b:2,
+  [Symbol.iterator]() {
+
+  }
+}
+````
