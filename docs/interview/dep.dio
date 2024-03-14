@@ -1,0 +1,37 @@
+<mxfile host="65bd71144e">
+    <diagram id="FSB3woBJ7ZYVRrRMuHGV" name="Page-1">
+        <mxGraphModel dx="1316" dy="978" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1169" pageHeight="827" background="none" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="响应式对象" style="whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;glass=0;rounded=1;shadow=0;labelBackgroundColor=none;labelBorderColor=none;labelPosition=center;verticalLabelPosition=middle;align=center;verticalAlign=middle;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;textDirection=rtl;" vertex="1" parent="1">
+                    <mxGeometry x="180" y="210" width="420" height="420" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="getter" style="whiteSpace=wrap;html=1;aspect=fixed;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;rounded=1;" vertex="1" parent="1">
+                    <mxGeometry x="335" y="270" width="110" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="setter" style="whiteSpace=wrap;html=1;aspect=fixed;rounded=1;shadow=0;glass=0;labelBackgroundColor=none;labelBorderColor=none;fillStyle=solid;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" vertex="1" parent="1">
+                    <mxGeometry x="335" y="450" width="115" height="115" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="" style="shape=flexArrow;endArrow=classic;html=1;" edge="1" parent="1" target="8">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="450" y="340" as="sourcePoint"/>
+                        <mxPoint x="660" y="340" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="8" value="依赖收集，dep.depend()" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=24;rounded=1;" vertex="1" parent="1">
+                    <mxGeometry x="690" y="320" width="290" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="" style="shape=flexArrow;endArrow=classic;html=1;fontSize=24;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="460" y="520" as="sourcePoint"/>
+                        <mxPoint x="690" y="520" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="10" value="派发更新：dep.notify()" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=24;rounded=1;" vertex="1" parent="1">
+                    <mxGeometry x="690" y="500" width="260" height="40" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
