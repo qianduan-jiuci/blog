@@ -10,15 +10,16 @@
 
 
 ## 02.Vue2和Vue3响应式的区别？
-Vue2和Vue3双向数据绑定的区别，可以理解为Proxy和Object.defineProperty的区别，针对于这两个技术的区别，在js的面试题中提到过了
+vue2的响应式：
 
-Proxy拦截对象的所有基本操作，而Object.defineProperty只是众多基本操作中其中一个
 
-既然Vue2中无法拦截数组，当这个数组是个响应式数据的时候，如何实现的响应式?
-`vue2中使用的Object.defineProperty无法监听到数组的变化，从而vue2直接改写了数组原型上的方法，其实看着是调用的`push`、`shift`、`unshift`等方法，其实是调用了改写过后的数组方法`
-vue3就不需要了，vue3可以拦截整个数组
+
+
 
 ## 03. 阐述响应式的流程
+
+### 1. vue2
+
 ![响应式数据](image-10.png)
 
 vue2：
@@ -36,7 +37,7 @@ vue2：
 3. Watcher
 4. Schedule
 
-### 1. Observer
+#### 1. Observer
 
 Observer要实现的目标很简单，就是把一个普通的js对象转化成响应式的对象
 
@@ -62,7 +63,7 @@ Observer是vue内部的构造器，我们可以通过vue提供的静态方法Vue
 
 
 
-### 2. Dep
+#### 2. Dep
 
 在Observer中有两个问题没有解决，就是读取属性时要做什么事，而属性变化时候，要做什么事，这个问题要靠dep来解决，Dep的含义是Dependency，表示依赖的意思。
 
@@ -81,7 +82,7 @@ Vue会为响应式对象中的每个属性、对象本身、数组本身创建�
 
 
 
-### 3. Watcher
+#### 3. Watcher
 
 这里又出现一个问题，在getter中进行依赖收集的时候，他是怎么知道是谁在调用我？
 
@@ -120,14 +121,14 @@ watcher首先会把render函数进行一次依赖收集，于是那些在render�
 
 
 
+`在vue2中，依赖收集的watcher是收集到dep.target上`
 
 
 
 
+#### 4. Schedule(调度器)
 
-### 4. Schedule(调度器)
-
-现在就剩下最后一个问题，就是Dep通知到watcher之后，如果watcher执行重运行对应的函数，就有可能导致该函数频繁运行，从而导致效率低下
+现在就剩下最后一个问题，就是Dep通知到watcher之后，如果watcher执行重运行对应的函数，就有可能导致该函数频繁运行，从而导致效率低下 
 
 
 
@@ -156,7 +157,7 @@ state.d = 'new data'
 
 
 
-### 5.  总体流程
+#### 5.  总体流程
 
 ![Alt text](image-16.png)
 
@@ -168,7 +169,139 @@ state.d = 'new data'
 
 
 
+### 2. vue3
 
+>  vue3中会通过proxy将原始对象转化为响应式对象，这样做的好处是proxy可以直接代理整个对象，包括数组也能直接监听到。
+>
+> 在proxy的get中，通过track函数实现依赖收集，在render函数要执行的时候，首先会把该函数交给Effect副作用函数执行。 当数据发生改变的时候，会调用proxy的set，在set中会先修改数据的值，然后通过trigger函数来完成派发更新。
+>
+> 会通知到与之关联的effect副作用函数，effect并不会立即执行这个函数，而是把函数交给调度器(Scheduler)通过nextTick包装成异步任务
+
+
+
+#### 1. 手写track函数和trigger的内部实现
+
+````js
+const obj = {
+    a: 1
+}
+
+const proxyObj = new Proxy(obj,{
+    get: function(target,key,receiver) {
+        // 依赖收集
+        track(target,key)
+        return Reflect.get(target,key,receiver)
+    },
+    set: function(target, key, value ,receiver) {
+        const state = Reflect.set(target,key,value,receiver)
+        // 派发更新
+        trigger(target,key,value)
+        return state
+    }
+});
+
+let bucket = new WeakMap();
+
+// 依赖收集
+function track(target, key) {
+    // 使用一个桶bucket来记录响应式数据和effect的关系, 用weakMap表示
+    const hasTarget = bucket.has(target);
+    let targetMap;
+    
+    if(!hasTarget) {
+        bucket.set(target, (depMap = new Map()))
+    } else {
+        targetMap = hasTarget
+    }
+    
+    const hasKey = depMap.has(key)
+    let keySet
+    if(!hasKey) {
+        depMap.set(key, (keySet = new Set()))
+    }else {
+        keySet.set(key, hasKey)
+    }
+    keySet.add(currentEffect); // 完成响应式属性和所依赖的effect进行关联
+}
+
+// 派发更新
+function trigger(target,key,value) {
+    const depsMap = bucket.has(target)
+    !depsMap && return 
+    const deps = depsMap.has(key)
+    deps.forEach(fn => fn())
+}
+
+let currentEffect = null
+
+function effect(fn){
+    const _effect = () {
+        currentEffect = _effect;
+        fn()
+        curentEffect = null;
+    }
+    _effect()
+}
+
+
+effect(() => {
+    // 通过render函数运行得到虚拟dom
+    _render()
+    // 调用update, 来进行diff算法以及生成真实dom
+    _update()
+})
+
+````
+
+target->key-dep
+
+`effect`：`属性改变`带来的副作用函数；
+
+`dep`(依赖)：`effect`副作用函数的集合；
+
+`targetMap`：被代理对象 `target` 到 `depMap` 的集合
+
+`depMap`: 通过属性 `key` 来映射其对应的依赖；
+
+````ts
+// The main WeakMap that stores {target -> key -> dep} connections.
+// Conceptually, it's easier to think of a dependency as a Dep class
+// which maintains a Set of subscribers.
+type Dep = Set<ReactiveEffect>
+type KeyToDepMap = Map<any, Dep>
+const targetMap = new WeakMap<any, KeyToDepMap>()
+
+let activeEffect: ReactiveEffect | undefined
+
+````
+
+
+
+
+
+#### 2. 深入研究- 为什么桶要用weakMap表示
+
+这是vue比较巧妙的一个地方
+
+
+
+桶只是记录当前响应式数据和所追踪的effect副作用函数，不应该和数据有直接的引用关系。
+
+
+
+weakmap因为是弱引用，当访问不到键的时候，该weakmap会自动的被gc回收掉
+
+
+
+#### 3. bucketMap为什么不能用weakMap
+
+因为weakmap的键只能是对象格式，而target里面的key类型不能确定一定是map
+
+
+
+#### 4. 为什么deps一定要是set
+
+在前面执行依赖收集的时候，如果是多个响应式数据所对应的effect是一个的话，effect执行一次就可以了，【无需重复执行effect】
 
 
 
@@ -225,7 +358,7 @@ vue框架中有一个compile模块，它主要负责将模板转化成render函�
 >
 > 对比差异的过程就是diff，vue在内部通过一个叫patch的函数完成该过程
 >
-> 在对比时，vue采用深度优先、逐层比较的方式进行比对。
+> 在对比时，vue采用深度优先、同层比较的方式进行比对。
 >
 > 在判断两个节点是否相同时，vue是通过虚拟节点的key和tag进行判断的
 >
@@ -332,13 +465,245 @@ _update函数会接受一个vnode参数，这就是新生成的虚拟dom树
 
 
 
+tips：
+
+![Alt text](image-18.png)
+
+diff算法中的对比子节点的时候，进行双指针比对的具体细节：
+
+1. 先比较a指针和c指针，判断两个节点是否相同，如果相同，执行更新操作，进行子节点的对比
+2. 如果不相同，比较b指针和d指针是否相同
+3. 如果不相同，比较c指针和b指针
+4. 如果不相同，比较a指针和d指针
+5. 如果不相同，检查是否在旧树中是否有和该节点相同的节点，如果有移动该节点，进行更新操作，进行子节点对比
+6. 如果不相同，创建新节点
+
+
+
+
+
+### 4. vue3的diff算法
+
+vnode更新，diff算法寻求最佳性能同步更新真实dom。必须明确old vnode和old真实dom是过去时，new vnode对应的new真实dom是我们最终想要的。基于old，得到new，如果让性能最好？最简单粗暴就是把old干掉，直接生成new。但是性能消耗最大。最佳方法是，尽可能复用真实dom。对真实dom的操作消耗关系：更新属性不移动 < 更新属性后移动到对应位置 < 创建新节点插入到对应位置。所以，diff算法最终是要尽可能找到可被复用的真实dom，如果不要移动最好，否则移动到对应位置，最后创建没有可复用的新节点，删除多余的未被复用的老真实dom节点。 vue3的diff算法比vue2的快，主要原因是在于复用dom元素相同的情况，移动dom的次数减少，因为vue3用到了最长递增子序列方案。更细节的讨论放在后面分析。 所以算法目标是：
+
+1. 尽可能快的找到可复用真实dom节点
+2. 复用真实dom节点的时候，尽可能也复用其相对顺序，少做移动。
+
+
+
+vue3中使用得diff算法被称为快速diff
+
+借鉴了以下两个框架：ivi和inferno
+
+整个diff分为五部完成
+
+1. 预处理前置节点
+2. 预处理后置节点
+3. 处理仅有新增节点
+4. 处理仅有卸载节点
+5. 处理其他情况（新增，卸载，移动）
+
+#### 1. 预处理前置节点
+
+![Alt text](image-19.png)
+
+从前到后对比两列节点，节点相同直接执行更新操作
+
+`在源码中通过定义一个i变量来记录当前前置节点的索引，当此过程中发现不一样的节点，记录当前的索引值，然后停止处理，使用break跳出循环`
+
+
+
+对应的vue3源码 package/runtime-core/render#1764
+
+````ts
+    // 1. sync from start
+    // (a b) c
+    // (a b) d e 	
+	let i = 0
+    const l2 = c2.length
+    let e1 = c1.length - 1 // prev ending index
+    let e2 = l2 - 1 // next ending index
+
+    // 1. sync from start
+    // (a b) c
+    // (a b) d e
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[i]
+      const n2 = (c2[i] = optimized
+        ? cloneIfMounted(c2[i] as VNode)
+        : normalizeVNode(c2[i]))
+      if (isSameVNodeType(n1, n2)) {
+        patch(
+          n1,
+          n2,
+          container,
+          null,
+          parentComponent,
+          parentSuspense,
+          isSVG,
+          slotScopeIds,
+          optimized
+        )
+      } else {
+        break
+      }
+      i++
+    }
+````
+
+
+
+#### 2. 预处理后置节点
+![Alt text](image-20.png)
+
+
+
+
+
+
+从后到前对比两颗树，如果遇到相同节点，进入打补丁更新，进入下一个一个节点的比较
+
+`在源码中使用e1来记录旧节点的后置索引值，使用e2来记录新节点的后置索引值`
+
+````ts
+    // 2. sync from end
+    // a (b c)
+    // d e (b c)
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[e1]
+      const n2 = (c2[e2] = optimized
+        ? cloneIfMounted(c2[e2] as VNode)
+        : normalizeVNode(c2[e2]))
+      if (isSameVNodeType(n1, n2)) {
+        patch(
+          n1,
+          n2,
+          container,
+          null,
+          parentComponent,
+          parentSuspense,
+          isSVG,
+          slotScopeIds,
+          optimized
+        )
+      } else {
+        break
+      }
+      e1--
+      e2--
+    }
+
+````
+
+
+
+
+
+#### 3. 处理仅有新增节点
+
+![Alt text](image-21.png)
+
+当前两步完成之后，会遇到两种理想状态（仅有新增节点需要处理，或者仅有卸载节点需要处理）
+
+可以发现： 当`i <= e2 && i > e1`的时候即为只有新增节点，这时候vue的diff算法只需要按照要求生成新的节点即可
+
+
+
+在源码中是这样实现的
+
+````ts
+
+    // 3. common sequence + mount
+    // (a b)
+    // (a b) c
+    // i = 2, e1 = 1, e2 = 2
+    // (a b)
+    // c (a b)
+    // i = 0, e1 = -1, e2 = 0   
+
+if (i > e1) {
+      if (i <= e2) {
+        const nextPos = e2 + 1
+        const anchor = nextPos < l2 ? (c2[nextPos] as VNode).el : parentAnchor
+        while (i <= e2) {
+          patch(
+            null,
+            (c2[i] = optimized
+              ? cloneIfMounted(c2[i] as VNode)
+              : normalizeVNode(c2[i])),
+            container,
+            anchor,
+            parentComponent,
+            parentSuspense,
+            isSVG,
+            slotScopeIds,
+            optimized
+          )
+          i++
+        }
+      }
+    }
+````
+
+
+
+
+
+#### 4. 处理仅有卸载节点
+
+![Alt text](image-22.png)
+
+另外一种特殊情况是仅有卸载节点
+
+`此时i > e2 && i <= e1为仅有卸载节点的情况`，此时只需要卸载节点即可
+
+````ts
+    // 4. common sequence + unmount
+    // (a b) c
+    // (a b)
+    // i = 2, e1 = 2, e2 = 1
+    // a (b c)
+    // (b c)
+    // i = 0, e1 = 0, e2 = -1
+    else if (i > e2) {
+      while (i <= e1) {
+        unmount(c1[i], parentComponent, parentSuspense, true)
+        i++
+      }
+    }
+````
+
+
+
+
+
+#### 5. 处理其他情况
+
+![Alt text](image-23.png)
+
+处理完前置节点和后置节点后，很多时候并没有出现类似的特殊情况
+
+在这个里面，vue需要卸载n3节点，添加n8节点，更新n4、n5、n6节点，那么vue是如何高效的完成这一步骤的？
+
+ 通过定义`s1: 旧树要处理的起始位置，s2：新树中要处理的起始位置`，在构造一个新树种的新节点位置映射表（用于映射出新树需要处理的节点的与位置的索引关系）
+![Alt text](image-24.png)
+
+具体流程是这样的，在创建完新节点映射关系之后，还会创建两个变量
+
+- 当前最远位置默认为0
+- 移动标识，默认是false
+
+当前最远位置的表示新dom树中所在的最远位置，每次对比之后修改该值，目的是如果是递增的话，表示当前节点不需要移动，反之需要移动，同时要把移动标识转换为true
+
+还会创建一个新旧节点位置映射关系 同时会填充为0，长度和新节点映射关系的长度一样，都为s2 -> e2
+![Alt text](image-25.png)
 
 
 
 
 ## 06. 依赖收集
 
-> 在vue2中，每个响应式数据都会被添加一个dep属性，响应式数据会收集其所依赖的watcher，当数据发生变化时，会通知相应的watcher进行更新，例如在初始化的时候，默认会调用渲染函数，触发依赖收集方法：`dep.depend()`, 当数据发生变化时，会调用`dep.notify()`，触发对应的watcher进行更新。vue3的设计思想和vue2保持一致。在vue3中，依赖收集通过Map结构将属性和effect建立映射关系，例如在初始化时，默认会调用渲染函数，触发属性依赖收集，这个通过`track()`方法实现，，当数据发生变化时，会找到对应effect，通过trigger()将对应的effect列表依次执行
+> 在vue2中，每个响应式数据都会被添加一个dep属性，响应式数据会收集其所依赖的watcher，当数据发生变化时，会通知相应的watcher进行更新，例如在初始化的时候，默认会调用渲染函数，触发依赖收集方法：`dep.depend()`, 当数据发生变化时，会调用`dep.notify()`，触发对应的watcher进行更新。vue3的设计思想和vue2保持一致。在vue3中，依赖收集通过Map结构将属性和effect建立映射关系，例如在初始化时，默认会调用渲染函数，触发属性依赖收集，这个通过`track()`方法实现，，当数据发生变化时，会找到对应effect，通过`trigger()`将对应的effect列表依次执行
 
 
 
@@ -774,11 +1139,23 @@ hosh不会导致页面404的原因：
 
 
 
-## 12. @ Computed实现原理
+## 12. Computed实现原理
+
+vue2：
+
+1. 在组件进行创建 时，会对计算属性进行初始化。计算属性的定义包括一个计算函数和一个缓存属性。
+
+2. 当计算属性被访问时，会触发计算函数的执行。在计算函数中，可以访问其他响应式数据。
+
+3. 计算函数会根据依赖的响应式数据进行计算，并返回计算结果。
+
+4. 计算属性会将计算结果缓存起来，下次访问时直接返回缓存的值。
+
+5. 当依赖的响应式数据发生变化时，计算属性会被标记为"dirty"（脏），下次访问时会重新计算并更新缓存的值。
+
+vue3：
 
 
-
-　
 
 
 
@@ -790,7 +1167,7 @@ watch和computed都是基于Watcher来实现的
 
 > computed属性是具有缓存的，依赖的值不发生变化，函数就不会执行，watch则是监听值的变化，当值发生变化时调用对应的回调函数
 >
-> computed不会立即执行，内部会通过defineProperty进行定义，并且通过dirty属性来检测依赖的数据是否发生变化，
+> computed不会立即执行，内部会通过defineProperty进行定义，并且通过脏值来检测依赖的数据是否发生变化
 >
 > watch则是立即执行，将老值保存在watcher上，当数据更新时，重新计算新值，将新值和老值传递到回调函数中
 
@@ -991,13 +1368,13 @@ vue3中针对静态节点做了预字符串化，也就是他会把哪些静态�
 
 
 
-#### 4. Block Tree
+#### 4. Block Tree 
 
 
 
 
 
-#### 5. PatchFlag
+#### 5. PatchFlag   
 
 ## 17.  ref和relative
 
