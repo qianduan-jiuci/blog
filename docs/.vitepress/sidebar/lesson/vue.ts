@@ -10,6 +10,10 @@ const VueSide = {
       link: '/lessons/vue/vue3.3',
     },
     {
+      text: '响应式语法糖',
+      link: '/lessons/vue/vueSugar',
+    },
+    {
       text: 'TypeScript工具类型',
       link: '/lessons/vue/typescript工具类型',
     },

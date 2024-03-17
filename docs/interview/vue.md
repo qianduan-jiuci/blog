@@ -695,8 +695,103 @@ if (i > e1) {
 
 当前最远位置的表示新dom树中所在的最远位置，每次对比之后修改该值，目的是如果是递增的话，表示当前节点不需要移动，反之需要移动，同时要把移动标识转换为true
 
-还会创建一个新旧节点位置映射关系 同时会填充为0，长度和新节点映射关系的长度一样，都为s2 -> e2
+还会创建一个新旧节点位置映射关系 同时会填充为0，长度和新节点映射关系的长度一样，都为s2 -> e2，如果0就表示需要创建节点。
+
 ![Alt text](image-25.png)
+
+
+
+`遍历旧树中的节点，判断是否存在于新节点位置映射表中`，如果发现没有，就执行卸载工作
+
+如果发现有，会把新节点位置映射表中的索引位置赋值给`当前最远位置`，同时会把该`索引位置加1(目的是为了分辨0)`在相同位置的新旧节点位置索引表中，判断该索引位置是否比当前最远位置要大（表示序列为递增，不需要移动元素），相反表示移动元素，同时要将移动标识修改为true。
+
+比对n3： 
+
+当前节点在新节点位置索引表中未发现，需要卸载
+
+![Alt text](image-26.png)
+
+比对n4: 
+
+当前节点在新节点位置索引表中发现，记录当前节点位置索引表中存储的位置为当前最远位置，并将该值加1添加到新旧节点位置表中的对应位置，并且当前的索引值为3大于当前最远位置0，为递增状态，表示不需要移动元素
+
+
+
+![Alt text](image-27.png)
+
+
+
+比对n5： 
+
+当前节点在新节点位置索引表中发现，记录当前节点位置索引表中存储的位置为当前最远位置为4，并将该值加1添加到新旧节点位置表中的对应位置5，并且当前的索引值为4大于当前最远位置3，为递增状态，表示不需要移动元素
+
+![Alt text](image-28.png)
+
+
+
+对比n6：
+
+当前节点在新节点位置索引表中发现，记录当前节点位置索引表中的存储的索引位置为最远位置为2， 并将`s1的值(n6对应的索引值)`到新旧节点位置索引表中得对应位置为6，并且当前得新节点位置索引为2小于当前最远位置4，不为递增序列，表示需要移动元素，同时修改移动表示为true
+
+
+![Alt text](image-29.png)
+
+
+
+当前已经全部比较完，会得到一个`新节点位置索引表`和`新旧节点位置映射表`， 对新旧节点位置映射表进行最长递增子序列（`目的是为了让节点进行最小程度的移动`），`并添加序列的内容为新旧节点位置映射表的索引`
+
+
+
+得到新旧节点的最长递增子序列，将该表和新旧节点位置索引表进行对比
+
+
+
+
+![Alt text](image-30.png)
+
+
+
+对比流程：
+
+会开启一个for循环遍历最长递增子序列，同样也会开启一个循环遍历新旧节点位置映射表（用i加下标表示），从末尾进行遍历，通过对比，定义最长递增子序列的位置j， 定义新旧节点位置映射表的位置i。 
+
+
+
+开始第一次循环： 
+
+![Alt text](image-31.png)
+
+得知新旧节点位置映射表中的值为0，就会创建一个新的节点，并创建n8的节点
+
+继续循环，此时 i = 2的位置，正好等于 j = 1的位置，此时表示节点不需要移动，同时 i 和  j 同时移动
+![Alt text](image-32.png)
+
+此时i = 1； j = 0， 二者位置正好相等，同样表示节点不需要移动， i ， j再同时往上移动
+
+![Alt text](image-33.png)
+
+此时 i = 0， 对应的是n6， i = 0 不存在最长递增子序列中，需要进行更新。
+
+
+
+
+
+
+
+这就是vue3中比较diff算法的具体实现
+
+
+
+> 在vue3中，组件进行创建的时候，会将组件分为动态组件和静态组件。每次进行diff的时候只针对动态组件进行diff。 
+>
+> vue3在进行判断是否为相同节点的时候，是通过判断key和type完成的。
+>
+> 具体实现是这样的，vue3会先从头部遍历两棵树，（预处理前置节点：当比较结果是不相同的时候，退出循环，并记录当前的索引位置），然后从尾部遍历两棵树（预处理后置节点：比较结果是不相同的时候，退出循环，记录两棵树当前的索引位置）。
+>
+> 然后会遍历旧dom树，结合新节点位置索引表完成新旧节点位置索引表，然后对该表进行最长递增子序列（`贪心算法和二分法查找`），通过比对最长递增子序列和新旧节点位置索引表来决定进行最后的移动创建。最大程度上的减少了移动的次数。
+
+
+
 
 
 
@@ -1370,13 +1465,281 @@ vue3中针对静态节点做了预字符串化，也就是他会把哪些静态�
 
 #### 4. Block Tree 
 
+vue2在对比新旧两棵树的时候，并不知道哪些节点是静态的，哪些是动态的，因此就只能一层一层的比较，这就浪费了大部分的时候在对比静态节点上。
+
+vue2和vue3在生成dom树的结构是一样的，Block Tree是为了解决在对比的时候，提升对比的效率，关键在patch算法这里
+
+````html
+<form>
+    <div>
+        <label>账号：</label>
+        <input v-model="user.loginId"/>
+    </div>
+    <div>
+        <label>密码：</label>
+        <input v-model="user.loginPwd"/>
+    </div>
+</form>
+````
 
 
+生成的虚拟dom树：
 
+![Alt text](image-34.png)
+
+vue2中会进行深度优先的对比流程，部分静态节点动态节点，每次对于静态节点的比较会浪费很多的性能。
+
+在vue3中，依托它强大的编译器，编译器能够对每一个节点进行标记，标记它到底是一个动态的节点还是一个静态的节点。
+
+而且vue3会把所有的动态节点提取到根节点里面去，在根节点里面内部会有一个数组，记录了所有的后代节点中的动态节点
+
+后续进行patch算法的时候，只会针对动态节点进行diff。
+
+记录动态节点的那个节点就是Block 节点，整个树就是一个Block 块，也叫做Block Tree
+
+动静比越小，静态节点越多，这个效率的提升就越大。
+
+![Alt text](image-35.png)
 
 #### 5. PatchFlag   
 
-## 17.  ref和relative
+
+
+vue2在对比每一个节点的时候，并不知道节点哪些相关的信息会发生变化，因此只能将所有的信息进行比对。
+
+通过PatchFlag，在单个节点进行对比的时候，进行了进一步的优化
+
+还是要依托于vue3的强大编译器
+
+该属性表示动态节点中的哪些内容（内容、属性、类等等）是动态的
+
+如果该值表示为1： 节点内容发生了改变
+
+如果该值表示为2： 类样式发生了改变
+
+该值可以叠加的
+
+
+
+![Alt text](image-36.png)
+
+
+![Alt text](image-37.png)
+
+
+
+### 3. 使用组合式API代替mixins
+
+在vue2中当遇到两个组件的配置或者逻辑类似的时候，常常通过使用mixins来完成逻辑的复用，但是mixins是有很大的缺点的，vue3的composition API解决了mixins的问题
+
+
+
+#### 1. mixins的缺点
+
+在vue2中mixins的导出的配置和选项式API是一样的
+
+````js
+// MyComponent.js script
+export default {
+  data: () => ({
+    myDataProperty: null
+  }),
+  methods: {
+    myMethod () { ... }
+  }
+  // ...
+}
+````
+
+````js
+// MyMixin.js
+export default {
+  data: () => ({
+    mySharedDataProperty: null
+  }),
+  methods: {
+    mySharedMethod () { ... }
+  }
+}
+````
+
+````js
+// ConsumingComponent.js
+import MyMixin from "./MyMixin.js";
+
+export default {
+  mixins: [MyMixin],
+  data: () => ({
+    myLocalDataProperty: null
+  }),
+  methods: {
+    myLocalMethod () { ... }
+  }
+}
+````
+
+早在2016年中，Dan Abramov写了《Mixins被认为是有害的》一文，他在文中认为，在React组件中使用mixins来重用逻辑是一种反模式，主张远离mixins。不幸的是，他提到的关于React mixins的缺点也同样适用于Vue。
+
+
+
+##### 1. 命名冲突：
+
+当在mixins中配置的选项，和本组件中配置的选项会有极大的可能会发生冲突，这就导致开发者在开发的时候，一旦使用这个mixins就要有很重的心智负担。
+
+这时候mixins会有一个合并策略，也就是本组件内声明的选项优先级大于mixins中的选项，对于处理生命周期函数冲突的时候，mixins会生成一个钩子列表，并且依次执行列表中的钩子
+
+
+
+````js
+const mixin = {
+  data: () => ({
+    myProp: null
+  })
+}
+
+export default {
+  mixins: [mixin],
+  data: () => ({
+    // same name!
+    myProp: null
+  })
+}
+````
+
+试想以下：一旦第三方mixin作为带有自己命名属性的npm包被添加进来，就会特别困难，因为它们可能会导致冲突。
+
+
+
+##### 2. 耦合度比较高：
+
+
+
+我们无法手动的从当前组件向混入器传入参数，这也导致了混入器的内容是写死的，降低了逻辑抽离的灵活性
+
+
+
+
+
+##### 3. 隐式依赖关系：
+
+mixin 和使用它的组件之间没有层次关系。这意味着组件可以使用mixin中定义的数据属性，但是mixin也可以使用假定在组件中定义的数据属性。
+
+比如：使用mixins共享一个表单验证，在mixins中有一个validate方法，在这个方法中依赖组件中的一个响应式数据，期望组件中会有这个一个数据，而且和validate中的变量必须保持一致，这样会导致一个问题，后续如果想重构一个组件，需要修改变量，这时候，会在运行时出现问题，排查的时候，也比较麻烦。极大的浪费了团队开发的效率。
+
+
+
+#### 2. composition API是如何解决这些问题的
+
+
+
+代码提取：第一个明显优点是提取逻辑很容易
+
+在进行composables的时候，在外部定义一个useXXX的函数，然后通过导出，供其他组件内部调用，更大程度上的完成了功能逻辑的复用。
+
+
+
+
+
+## 17.  ref和reactive
+
+### 1. reactive
+
+用reactive声明的响应式数据，内部直接使用的proxy进行代理的
+
+
+
+reactive的局限：
+
+- 该方式只能声明响应式对象，不能声明一个原始值的响应式状态
+- 讲响应式对象进行解构出来的时候，会导致响应式丢失
+
+
+
+
+
+### 2. ref
+
+ ref() 方法来允许我们创建使用任何值类型的响应式 ref 。
+
+ref在内部是包装了reactive的，当ref声明的状态是对象的时候，内部会直接使用reactive进行管理
+
+
+
+ref的原理如下：
+
+首先判断该值是否是一个ref对象，如果是的话，直接返回该值
+
+如果不是，则会通过RefImpl构造函数，创建一个实例，该构造函数中存在get和set，并在get中进行依赖收集，set中进行派发更新。
+
+如果该值的类型是对象类型，那么会被交给reactive中，reactive中使用proxy来进行代理。
+
+
+
+````ts
+
+export function ref(value?: unknown) {
+  return createRef(value, false)
+}
+
+function createRef(rawValue: unknown, shallow: boolean) {
+  if (isRef(rawValue)) {
+    return rawValue
+  }
+  return new RefImpl(rawValue, shallow)
+}
+
+
+class RefImpl<T> {
+  private _value: T
+  private _rawValue: T
+
+  public dep?: Dep = undefined
+  public readonly __v_isRef = true
+
+  constructor(value: T, public readonly __v_isShallow: boolean) {
+    this._rawValue = __v_isShallow ? value : toRaw(value)
+    this._value = __v_isShallow ? value : toReactive(value)
+  }
+
+  get value() {
+    trackRefValue(this)
+    return this._value
+  }
+
+  set value(newVal) {
+    const useDirectValue =
+      this.__v_isShallow || isShallow(newVal) || isReadonly(newVal)
+    newVal = useDirectValue ? newVal : toRaw(newVal)
+    if (hasChanged(newVal, this._rawValue)) {
+      this._rawValue = newVal
+      this._value = useDirectValue ? newVal : toReactive(newVal)
+      triggerRefValue(this, newVal)
+    }
+  }
+}
+
+````
+
+
+
+
+
+
+
+官方的默认推荐方法就是使用ref。
+
+从历史原因上讲，当时提供reactive的原因是为了哪些习惯使用vue2的用户，一切都是this.XXX， 所以reactive的体验和this更接近一些。
+
+使用reactive有一个潜在的问题，对于喜欢使用reactive的人，喜欢什么都堆在一个reactive里面，这样对后期的重构和和维护有一些问题
+
+但是使用ref的话，可以发现，ref可以随意的移动，也就是两个声明的ref之间，他不会有一个强的绑定关系。
+
+比如说传一个响应式的状态进行composables的时候，在一个外部的useXXX中，如果使用reactive的话，只有两种选择
+
+- 把整个reactive传进入，这回有一个过度传递的问题，有些是不需要的，也会传递到里面
+- 使用toRef，把那个状态单独pick出来，这时候会有一层额外的mental overhead（精神开销）
+
+在使用这两个响应式状态声明的方式中，可能每个人的偏好都不一样，所以在团队的情况呢，大家都follow一个规则，就可以了
 
 
 
@@ -1384,9 +1747,85 @@ vue3中针对静态节点做了预字符串化，也就是他会把哪些静态�
 
 ## 18. Watch和WatchEffect
 
+不同点
+
+> - watchEffect会自动运行一次，来进行自动依赖收集，watch本身具有惰性，他不会在第一次就执行，相反当数据发生改变之后，才会去执行
+>
+> 
+>
+> - watchEffect只能接收到新的值，而watch可以监听到数据发生变化前后的值
+>
+> 
+>
+> - watch需要指定监听的数据源，而watchEffect会自动进行依赖收集·
+
+
+
 
 
 ## 19.  Provide和inject
+
+依赖注入
+
+当组件进行嵌套层级比较深的时候，祖先组件需要向后代组件进行传值，推荐使用这种依赖注入的方式
+
+````vue
+<script setup lang="ts">
+import { provide, readonly, ref, watch } from "vue";
+import HelloWorld from "./components/HelloWorld.vue";
+
+enum Sex {
+  male = "男",
+  female = "女",
+}
+
+const state = ref<{ username: string; sex: Sex }>({
+  username: "zhangsan",
+  sex: Sex.male,
+});
+
+provide("userinfo", readonly(state));
+
+const changeProvide = function () {
+  state.value.username += "akljskdf";
+};
+watch(state, (current, prev) => {
+  console.log("app.vue", current, prev);
+});
+</script>
+
+<template>
+  <HelloWorld msg="Vite + Vue" />
+  <button @click="changeProvide">修改依赖注入</button>
+</template>
+
+<style scoped>
+</style>
+
+
+// 后代组件
+<script setup lang="ts">
+import { InjectionKey, inject, isRef, watch, watchEffect } from "vue";
+const state = inject("userinfo");
+ watch(
+   state,
+   (current, prev) => {
+     console.log("userinfo", current);
+  },
+   {
+    deep: true,
+   });
+
+</script>
+
+<template>
+  {{ state.username }}
+  {{ state.sex }}
+</template>
+
+<style scoped></style>
+
+````
 
 
 
@@ -1394,13 +1833,107 @@ vue3中针对静态节点做了预字符串化，也就是他会把哪些静态�
 
 ## 20. toRefs和toRef
 
+toRef 和 toRefs 都是 Vue3 的响应式 API。
+
+toRef 的作用是 `可以将值、refs 或 getters 规范化为 ref`。也可以基于响应式对象上的一个属性，创建一个对应的 ref。这样创建的 ref 与其源属性保持同步：改变源属性的值将更新 ref 的值
+
+toRefs 的作用是`将一个响应式对象转换为一个普通对象，这个普通对象的每个属性都是指向源对象相应属性的 ref, 每个单独的 ref 都是使用 [toRef()]创建的。` 
+
+
+
+
+
+toRef：
+
+````JS
+// 按原样返回现有的 ref
+toRef(existingRef)
+
+// 创建一个只读的 ref，当访问 .value 时会调用此 getter 函数
+toRef(() => props.foo)
+
+// 从非函数的值中创建普通的 ref
+// 等同于 ref(1)
+toRef(1)
+````
+
+
+
+注意：toRef生成的ref和直接生成的ref是不一样的
+
+````js
+const state = ref({
+    foo: '123'
+})
+
+// 在响应式对象中可以不用带value
+const fooRef = ref(state.foo)
+const fooToRef = ref(state.foo)
+````
+
+此时，上面的ref和state.foo 不会有任何关联，但是使用toRef的话，就可以保证在修改fooRef
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 
 ## 21. shallowReactive 与 shallowRef
 
+它是reactive API的一种变体，`用于创建一个仅响应对象顶层属性的响应式对象`。`与reactive不同的是，shallowReactive不会递归地将对象的所有属性转换为响应式对象，只会将顶层属性转换为  式对象`。因此，当顶层属性改变时，shallowReactive会触发更新，但当嵌套属性改变时，不会触发更新。
 
+shadowRef他会接受原始数据类型和引用数据类型，接受原始数据类型的时候，就和ref类似，接受引用数据类型的时候，生成的响应式只针对于该对象本身，对象下的属性更新不会触发更新。
+
+````ts
+const state = shallowRef({ count: 1 })
+
+// 不会触发更改
+state.value.count = 2
+
+// 会触发更改
+state.value = { count: 2 }
+````
 
 
 
@@ -1408,19 +1941,115 @@ vue3中针对静态节点做了预字符串化，也就是他会把哪些静态�
 
 ## 22. readonly 与 shallowReadonly
 
+` readonly 和 shallowReadonly `都是 Vue3 的工具函数，用于创建只读（不可修改）的响应式对象。
+
+- readonly 会递归将对象的所有属性都转换成只读的响应式属性，即使对象内部还包含其他对象或数组
+
+- shallowReadonly 只会将对象自身的属性转换成只读的响应式属性，而不会递归转换对象内部的属性。
+
+
+
 
 
 ## 23. toRaw与markRaw转换为普通数据和标记属性非响应式
+
+toRaw：根据一个 Vue 创建的代理返回其原始对象。
+
+````ts
+function toRaw<T>(proxy: T): T
+````
+
+`toRaw()` 可以返回由 [`reactive()`](https://cn.vuejs.org/api/reactivity-core.html#reactive)、[`readonly()`](https://cn.vuejs.org/api/reactivity-core.html#readonly)、[`shallowReactive()`](https://cn.vuejs.org/api/reactivity-advanced.html#shallowreactive) 或者 [`shallowReadonly()`](https://cn.vuejs.org/api/reactivity-advanced.html#shallowreadonly) 创建的代理对应的原始对象。
+
+这是一个可以用于临时读取而不引起代理访问/跟踪开销，或是写入而不触发更改的特殊方法。不建议保存对原始对象的持久引用，请谨慎使用。
+
+````ts
+const foo = {}
+const reactiveFoo = reactive(foo)
+
+console.log(toRaw(reactiveFoo) === foo) // true
+````
+
+markRaw:  将一个对象标记为不可被转为代理，返回对象本身
+
+````ts
+const foo = markRaw({})
+console.log(isReactive(reactive(foo))) // false
+
+// 也适用于嵌套在其他响应性对象
+const bar = reactive({ foo })
+console.log(isReactive(bar.foo)) // false
+
+````
 
 
 
 ## 24. customRef 自定义ref使用
 
+用于创建一个自定义的 ref，显式声明对其依赖追踪和更新触发的控制方式。
+
+> `customRef()` 预期接收一个工厂函数作为参数，这个工厂函数接受 `track` 和 `trigger` 两个函数作为参数，并返回一个带有 `get` 和 `set` 方法的对象。
+>
+> 一般来说，`track()` 应该在 `get()` 方法中调用，而 `trigger()` 应该在 `set()` 中调用。然而事实上，你对何时调用、是否应该调用他们有完全的控制权。
+
+
+
+例如： 创建一个防抖`useDebouncedRef`
+
+````js
+import { customRef } from 'vue'
+
+export function useDebouncedRef(value, delay = 200) {
+  let timeout
+  return customRef((track, trigger) => {
+    return {
+      get() {
+        track()
+        return value
+      },
+      set(newValue) {
+        clearTimeout(timeout)
+        timeout = setTimeout(() => {
+          value = newValue
+          trigger()
+        }, delay)
+      }
+    }
+  })
+}
+````
+
+
+
+
+
 
 
 ## 25. 响应式数据的判断
 
-isRef、isReactive、isReadonly、isProxy
+
+
+isRef: 检查该数据是否一个Ref类型的响应式对象
+
+isReactive：检查该数据是否一个reactive的响应式对象
+
+isReadonly：检查该对象是否为一个只读的响应式对象
+
+isProxy：检查该响应式对象是否为一个代理对象（通过reactive或者是readonly, 又或者是shallowReactive或者是shallowReadonly创建的）
+
+
+
+> 在isReactive中的源码实现中，他的定义是这样的，用来检验该对象是否是为reative或者shallowReactive或者ref({})创建的响应式对象
+>
+>  * isReactive(reactive({}))             => true
+>  * isReactive(readonly(reactive({})))   => true
+>  * isReactive(ref({}).value)            => true
+>  * isReactive(readonly(ref({})).value)  => true
+>  * isReactive(ref(true))                => false
+>  * isReactive(shallowRef({}).value)     => false
+>  * isReactive(shallowReactive({}))      => true
+
+
 
 
 
@@ -1566,3 +2195,18 @@ SSR带来的优势主要减少了客户端的渲染时间和首次加载时间�
 
 
 
+## 49. pinia和vuex的区别
+
+Pinia和Vuex都是在Vue.js应用中用于管理应用状态的库，但是它们有以下区别：
+
+- API风格：Pinia采用基于函数API的风格，Vuex采用基于对象API的风格。
+
+- TypeScript支持：Pinia天生支持TypeScript，而Vuex需要额外安装TypeScript支持。
+
+- 性能：Pinia通过利用Vue 3中的新特性来提高性能，比如使用reactive来管理状态，让你能够避免使用Vue 2中的Dep对象。相比之下，Vuex使用了更复杂的数据结构，并使用了Vue 2中的Dep对象，因此相对来说性能相对较低。
+
+- 动态加载：Pinia支持动态加载模块，而Vuex需要在应用启动时加载所有模块。
+
+- 模块初始化：在Vuex中，模块需要在应用启动时初始化，而在Pinia中，模块是在需要时动态创建的。
+
+总的来说，Pinia更加轻量化，可以提供更好的性能，而Vuex则提供了更多的开箱即用的功能和更广泛的社区支持。选择哪一个取决于您的具体需求。
