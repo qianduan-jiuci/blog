@@ -1178,11 +1178,17 @@ hosh不会导致页面404的原因：
 
 
 
+
+
 实现原理的不同：
 
 > hash模式是从地址栏中的hash部分获取地址,   通过localtion.hash进行修改并且通过window.hashchange事件可以监听到URL的变化．
 >
 > 而histroy是通过调用H5的history API来实现的,通过history.pushState进行页面的跳转,  调用 `history.pushState()` 或者 `history.replaceState()` 不会触发 `popstate` 事件。`popstate` 事件只会在浏览器某些行为下触发，比如点击后退按钮（或者在 JavaScript 中调用 `history.back()` 方法）。即，在同一文档的两个历史记录条目之间导航会触发该事件。通过使用浏览器的历史记录栈实现的
+
+
+
+
 
 
 
@@ -2179,9 +2185,7 @@ const scopedValue = ref({
 
 `<script setup>`本身是一个语法糖，在vue3初期的时候和vue2的写法类似，也是属于选项式API，只是把所有的代码都写到了setup生命周期函数中了，如果想要在模板中使用，必须要进行返回，但是这种写法太过于麻烦了，不能满足组合式。
 
-setup生命周期执行于组件创建之前，所以在setup中应该杜绝this的出现，此时还没有组件实例
-
-setup是一个接受props和context（emits，attrs，slots）的函数
+setup生命周期执行于组件创建之前，所以在setup中应该杜绝this的出现，此时还没有组件实例    setup是一个接受props和context（emits，attrs，slots）的函数
 
 `在语法糖中，所有 ES 模块导出都被认为是暴露给上下文的值，并包含在 setup() 返回对象中`
 
@@ -2201,31 +2205,62 @@ setup是一个接受props和context（emits，attrs，slots）的函数
 
 
 
-
-
-
-
-
-
-
-
-
-
 ## 30. 组合式API的好处
 
+> 代码组织和复用：组合式API允许将相关逻辑封装为函数，使得代码更加模块化和可复用。这样可以提高代码的组织性和可维护性。
+>
+> 更灵活的逻辑复用：通过将逻辑抽象为函数，我们可以更方便地在不同组件之间进行逻辑复用，减少了代码的冗余。
+>
+> 更清晰的逻辑关系：组合式API使得组件的逻辑更加明确，每个函数都代表了特定的功能，使得代码更易读、易理解。
+>
+> 更好的类型推导：组合式API兼顾了对TypeScript的支持，可以提供更好的类型推导和代码静态分析。这有助于在开发过程中捕获潜在的错误并增强代码的健壮性。
+>
+> 更好的逻辑封装：组合式API使得逻辑可以以更小的粒度进行封装，使得代码更加模块化和可维护。每个函数代表一个特定的功能，可以更容易地理解和修改逻辑。
+>
+> 更好的响应式控制：组合式API提供了`ref`和`reactive`等响应式函数，可以更精细地控制数据的响应性。可以选择使用`ref`进行单一值的响应式，或者使用`reactive`进行对象的响应式。
 
+
+
+总结：
+
+- 更清晰的代码结构
+- 更注重逻辑封装复用
+- 更好的类型推导
+- 响应式的完美控制
 
 
 
 ## 31. pinia和vuex的区别
 
+`pinia和vuex都是vue的状态管理工具`，但他们在设计和使用上面有些不同：
 
 
 
+1. `设计方面`：
 
-## 32. vue3.3新增内容
+​		vuex使用的是全局单例模式，通过一个store对象来管理所有的状态，组件通过store对象来获取和修改状态，
+
+​		pinia则采用了分离模式，进行扁平化处理，即每个组件都可以有自己的store实例，通过创建store实例来管理状态，而且相互独立。
 
 
+
+2. `语法方面`：
+
+​		pinia没有mutaiton，pinia是基于vue3的组合式api，也抛弃了vuex中的模块，每个仓库都是通过defineStore创建的。pinia的actions支持同步异步，而mutation只能支持同步，不支持异步。
+
+​		pinia具有更好的代码风格，并且没有命名空间
+
+​		在后续进行开发的时候会更加简便。有效降低心智负担。
+
+3. `ts支持`
+
+​		pinia天生支持ts，而vuex需要额外安装ts
+
+
+
+4. `兼容性`
+
+​		vuex的4对应vue3， vuex3对应vue2， 而pinia同时兼容vue2和vue3
 
 
 
@@ -2245,17 +2280,230 @@ SSR带来的优势主要减少了客户端的渲染时间和首次加载时间�
 
 ## 34. vue3中的tree-shaking
 
+>  Tree Shaking 是一种优化技术，主要用于减少 JavaScript 或 TypeScript项目中未使用的代码。
+>
+> 其原理是通过`静态分析并标记未被引用的模块、函数、变量等，将其从最终构建结果中去除掉`，进而达到减小文件大小和提升项目性能的目的。
+>
+> tree-shaking最早在rullup中提出
+
+
+
+### 1. 静态分析能力的提供方ESM
+
+ESM 使用 `import` 导入模块，使用 `export` 导出模块。
+
+
+
+`Tree shaking`是基于`ES6`模块化语法（`import`与`exports`），主要是借助`ES6`模块的`静态编译思想`，在编译时就能确定模块的依赖关系，以及输入和输出的变量
+
+`Tree shaking`无非就是做了两件事：
+
+- 编译阶段利用`ES6 Module`判断哪些模块已经加载
+- 判断那些模块和变量未被使用或者引用，进而删除对应代码
+
+
+
+
+
+### 2. CommonJS规范为什么不可以使用？
+
+
+
+CommonJS 使用 `require()` 导入模块，使用 `module.exports` 或 `exports` 导出模块。
+
+
+
+***采用动态导入***
+
+> CommonJS 定义的模块化规范开发的项目中，`通常无法直接使用 Tree Shaking`。
+
+
+
+`这是因为 CommonJS 模块系统采用了动态导入（dynamic import）和运行时加载机制，与静态分析和优化相关的 Tree Shaking 技术不兼容。`
+
+
+
+
+
+### 3. vue3中的tree-shaking提升
+
+在`Vue2`中，无论我们使用什么功能，它们最终都会出现在生产代码中。主要原因是`Vue`实例在项目中是单例的，捆绑程序无法检测到该对象的哪些属性在代码中被使用到
+
+```js
+import Vue from 'vue'
+ 
+Vue.nextTick(() => {})
+```
+
+而`Vue3`源码引入`tree shaking`特性，将全局 API 进行分块。如果您不使用其某些功能，它们将不会包含在您的基础包中
+
+```js
+import { nextTick, observable } from 'vue'
+ 
+nextTick(() => {})
+```
+
+
+
+
+
+
+
+### 4. 编译比较
+
+相比Vue2有以下优势:
+
+- 提升了运行效率,减少内存消耗;
+- 减少打包后大小,加快应用加载;
+- 依赖更精确,编译效率更高。
+
+> 假设有一个组件库my-lib,包含按钮、弹窗、表单等20个组件。
+
+vue2导入：
+
+```js
+js复制代码// 导入整个my-lib
+import * as myLib from 'my-lib' 
+
+// 注册2个组件
+components: {
+  'my-button': myLib.Button,
+  'my-dialog': myLib.Dialog
+}
+```
+
+打包后my-lib整个大小200kb,实际只用了2个组件。
+
+vue3导入：
+
+```js
+js复制代码// 按需导入
+import {Button, Dialog} from 'my-lib'
+
+components: {
+  'my-button': Button,
+  'my-dialog': Dialog 
+```
+
 
 
 
 
 ## 35. 介绍一下Vue3中的内置组件
 
+内置组件无需注册便可以直接在模板中使用。它们也支持 tree-shake：仅在使用时才会包含在构建中。
 
+不过在render函数中使用的话，需要显示引用
+
+````js
+import { h, Transition } from 'vue'
+
+h(Transition, {
+  /* props */
+})
+````
+
+
+
+
+
+### 1. transform
+
+> 为单个元素或组件提供动画过渡效果.
+
+props：
+
+````tsx
+interface TransitionProps {
+  /**
+   * 用于自动生成过渡 CSS class 名。
+   * 例如 `name: 'fade'` 将自动扩展为 `.fade-enter`、
+   * `.fade-enter-active` 等。
+   */
+  name?: string
+  /**
+   * 是否应用 CSS 过渡 class。
+   * 默认：true
+   */
+  css?: boolean
+  /**
+   * 指定要等待的过渡事件类型
+   * 来确定过渡结束的时间。
+   * 默认情况下会自动检测
+   * 持续时间较长的类型。
+   */
+  type?: 'transition' | 'animation'
+  /**
+   * 显式指定过渡的持续时间。
+   * 默认情况下是等待过渡效果的根元素的第一个 `transitionend`
+   * 或`animationend`事件。
+   */
+  duration?: number | { enter: number; leave: number }
+  /**
+   * 控制离开/进入过渡的时序。
+   * 默认情况下是同时的。
+   */
+  mode?: 'in-out' | 'out-in' | 'default'
+  /**
+   * 是否对初始渲染使用过渡。
+   * 默认：false
+   */
+  appear?: boolean
+
+  /**
+   * 用于自定义过渡 class 的 prop。
+   * 在模板中使用短横线命名，例如：enter-from-class="xxx"
+   */
+  enterFromClass?: string
+  enterActiveClass?: string
+  enterToClass?: string
+  appearFromClass?: string
+  appearActiveClass?: string
+  appearToClass?: string
+  leaveFromClass?: string
+  leaveActiveClass?: string
+  leaveToClass?: string
+}
+````
+
+它可以将进入和离开动画应用到通过默认插槽传递给它的元素或组件上。进入或离开可以由以下的条件之一触发：
+
+- 由 `v-if` 所触发的切换
+- 由 `v-show` 所触发的切换
+- 由特殊元素 `<component>` 切换的动态组件
+- 改变特殊的 `key` 属性
+
+`<Transition>` 仅支持单个元素或组件作为其插槽内容。如果`内容是一个组件，这个组件必须仅有一个根元素`。
+
+
+
+当一个 `<Transition>` 组件中的元素被插入或移除时，会发生下面这些事情：
+
+1. Vue 会自动检测目标元素是否应用了 CSS 过渡或动画。如果是，则一些 [CSS 过渡 class](https://cn.vuejs.org/guide/built-ins/transition.html#transition-classes) 会在适当的时机被添加和移除。
+2. 如果有作为监听器的 [JavaScript 钩子](https://cn.vuejs.org/guide/built-ins/transition.html#javascript-hooks)，这些钩子函数会在适当时机被调用。
+3. 如果没有探测到 CSS 过渡或动画、也没有提供 JavaScript 钩子，那么 DOM 的插入、删除操作将在浏览器的下一个动画帧后执行。
+
+#### 1. 基于css的过渡效果
+
+一共有 6 个应用于进入与离开过渡效果的 CSS class。
+
+
+![Alt text](image-42.png)
+
+
+### 2. transformGroup
+
+### 3. keep-alive
+
+### 4. teleport
+
+### 5. suspense
 
 
 
 ## 36. v-for和v-if的优先级
+
+
 
 
 
@@ -2295,7 +2543,75 @@ SSR带来的优势主要减少了客户端的渲染时间和首次加载时间�
 
 
 
-## 43.  说一下什么是单文件组件，以及单(多)组件的区别
+## 43.  说一下什么是SPA，以及MPA的区别
+
+`SPA` 全称 `Single Page Application`，即单页面应用。它所需的资源，如 HTML、CSS 和 JS 等，在一次请求中就加载完成，也就是不需刷新地动态加载。
+
+对于 SPA 来说，页面的切换就是组件或视图之间的切换。
+
+SPA应用程序避免了由于在服务器上呈现页面而导致的中断。 这消除了 Web 开发世界在提供无缝用户体验方面通常面临的最大问题。
+
+
+
+
+![Alt text](image-39.png)
+
+### 1. SPA原理
+
+> js能够感知到地址栏URL的变化，当地址栏发生改变的时候，不管是使用hash还是history都可以实现地址栏切换，然后从路由表里面去查找对应的组件，然后进行切换。
+
+SPA的优点的话，页面切换快，用户体验更好
+
+SPA的缺点的话，因为一次性把前端所需要的资源全部请求，首屏加载速度慢，同时因为最开始的时候，后端返回的只有index页面，后续的节点也都是通过js的方式创建出来的，不利于SEO
+
+
+
+### 2. MPA
+
+`MPA`多页面应用 `MultiPage Application` ，指有多个独立页面的应用（多个html页面），每个页面必须重复加载js、css等相关资源。多页应用跳转，需要整页资源刷新。
+
+与 `SPA` 对比最大的不同即是页面路由切换由原生浏览器文档跳转（`navigating across documents`）控制。 页面跳转，是返回 HTML 的。
+
+
+![Alt text](image-40.png)
+
+MPA的优点：首屏加载快，利于SEO
+
+MPA的缺点：页面切换慢，用户体验不好
+
+
+
+### 3. 为什么还要使用SPA
+
+通过上面的分析,我们不难发现,SPA和MPA各有优缺点,那我们为什么还要开发SPA呢,其实,
+
+`Vue`还提供了一些其它的技术来解决这些缺点，比如说服务器端渲染技术(SSR)，通过这些技术可以完美解决这些缺点，解决完这些问题，实际上单页面应用对于前端来说是非常完美的页面开发解决方案。
+
+
+
+### 4. SPA和MPA的对比
+![Alt text](image-41.png)
+
+
+
+
+
+### 5. 解决办法
+
+常见的几种SPA首屏优化方式
+
+- 减小入口文件积
+- 静态资源本地缓存
+- UI框架按需加载
+- 图片资源的压缩
+- 组件重复打包
+- 开启GZip压缩
+- 使用SSR
+
+
+
+
+
 
 
 
@@ -2323,22 +2639,12 @@ SSR带来的优势主要减少了客户端的渲染时间和首次加载时间�
 
 
 
+ 
+
 ## 48. @ 插件是什么，以及实现原理
 
 
 
-## 49. pinia和vuex的区别
 
-Pinia和Vuex都是在Vue.js应用中用于管理应用状态的库，但是它们有以下区别：
 
-- API风格：Pinia采用基于函数API的风格，Vuex采用基于对象API的风格。
-
-- TypeScript支持：Pinia天生支持TypeScript，而Vuex需要额外安装TypeScript支持。
-
-- 性能：Pinia通过利用Vue 3中的新特性来提高性能，比如使用reactive来管理状态，让你能够避免使用Vue 2中的Dep对象。相比之下，Vuex使用了更复杂的数据结构，并使用了Vue 2中的Dep对象，因此相对来说性能相对较低。
-
-- 动态加载：Pinia支持动态加载模块，而Vuex需要在应用启动时加载所有模块。
-
-- 模块初始化：在Vuex中，模块需要在应用启动时初始化，而在Pinia中，模块是在需要时动态创建的。
-
-总的来说，Pinia更加轻量化，可以提供更好的性能，而Vuex则提供了更多的开箱即用的功能和更广泛的社区支持。选择哪一个取决于您的具体需求。
+## 49. 什么是SFC，什么是MFC，二者的区别
