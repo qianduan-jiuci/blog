@@ -1430,10 +1430,11 @@ function  render() {
 vue3中针对静态节点做了预字符串化，也就是他会把哪些静态节点全都变成字符串，也少了虚拟dom转化为真实dom的操作复杂度。
 
 当vue的编译器遇到大量的静态内容，会将其直接编译成一个普通字符串节点。
+![Alt text](image-20240314211430455.png)
 
-<img src="C:\Users\95464\AppData\Roaming\Typora\typora-user-images\image-20240314211430455.png" alt="image-20240314211430455" style="zoom:200%;" />
 
-<img src="C:\Users\95464\AppData\Roaming\Typora\typora-user-images\image-20240314211500952.png" alt="image-20240314211500952" style="zoom:150%;" />
+![Alt text](image-20240314211500952.png)
+
 
 
 ![Alt text](image-20240314211515648.png)
