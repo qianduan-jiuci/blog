@@ -127,6 +127,7 @@ watcher首先会把render函数进行一次依赖收集，于是那些在render�
 
 
 #### 4. Schedule(调度器)
+[alt text](image-15.png)
 
 现在就剩下最后一个问题，就是Dep通知到watcher之后，如果watcher执行重运行对应的函数，就有可能导致该函数频繁运行，从而导致效率低下 
 
@@ -1434,7 +1435,8 @@ vue3中针对静态节点做了预字符串化，也就是他会把哪些静态�
 
 <img src="C:\Users\95464\AppData\Roaming\Typora\typora-user-images\image-20240314211500952.png" alt="image-20240314211500952" style="zoom:150%;" />
 
-![image-20240314211515648](C:\Users\95464\AppData\Roaming\Typora\typora-user-images\image-20240314211515648.png)
+
+![Alt text](image-20240314211515648.png)
 
 #### 3. 缓存事件处理函数
 
