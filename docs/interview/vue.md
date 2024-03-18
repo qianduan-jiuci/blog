@@ -1803,7 +1803,9 @@ watch(state, (current, prev) => {
 </style>
 
 
-// 后代组件
+
+````
+````vue
 <script setup lang="ts">
 import { InjectionKey, inject, isRef, watch, watchEffect } from "vue";
 const state = inject("userinfo");
