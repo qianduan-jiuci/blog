@@ -2203,6 +2203,14 @@ setup生命周期执行于组件创建之前，所以在setup中应该杜绝this
 
 
 
+setup语法糖和setup函数最大的一个区别就是expose的区别
+
+在setup函数中，他会想外界暴露自己的所有成员
+
+但是在setup语法糖中呢，需要手动通过expose来暴露成员，否则什么也不暴露
+
+
+
 
 
 ## 30. 组合式API的好处
@@ -2411,60 +2419,7 @@ h(Transition, {
 
 > 为单个元素或组件提供动画过渡效果.
 
-props：
 
-````tsx
-interface TransitionProps {
-  /**
-   * 用于自动生成过渡 CSS class 名。
-   * 例如 `name: 'fade'` 将自动扩展为 `.fade-enter`、
-   * `.fade-enter-active` 等。
-   */
-  name?: string
-  /**
-   * 是否应用 CSS 过渡 class。
-   * 默认：true
-   */
-  css?: boolean
-  /**
-   * 指定要等待的过渡事件类型
-   * 来确定过渡结束的时间。
-   * 默认情况下会自动检测
-   * 持续时间较长的类型。
-   */
-  type?: 'transition' | 'animation'
-  /**
-   * 显式指定过渡的持续时间。
-   * 默认情况下是等待过渡效果的根元素的第一个 `transitionend`
-   * 或`animationend`事件。
-   */
-  duration?: number | { enter: number; leave: number }
-  /**
-   * 控制离开/进入过渡的时序。
-   * 默认情况下是同时的。
-   */
-  mode?: 'in-out' | 'out-in' | 'default'
-  /**
-   * 是否对初始渲染使用过渡。
-   * 默认：false
-   */
-  appear?: boolean
-
-  /**
-   * 用于自定义过渡 class 的 prop。
-   * 在模板中使用短横线命名，例如：enter-from-class="xxx"
-   */
-  enterFromClass?: string
-  enterActiveClass?: string
-  enterToClass?: string
-  appearFromClass?: string
-  appearActiveClass?: string
-  appearToClass?: string
-  leaveFromClass?: string
-  leaveActiveClass?: string
-  leaveToClass?: string
-}
-````
 
 它可以将进入和离开动画应用到通过默认插槽传递给它的元素或组件上。进入或离开可以由以下的条件之一触发：
 
@@ -2477,49 +2432,253 @@ interface TransitionProps {
 
 
 
-当一个 `<Transition>` 组件中的元素被插入或移除时，会发生下面这些事情：
-
-1. Vue 会自动检测目标元素是否应用了 CSS 过渡或动画。如果是，则一些 [CSS 过渡 class](https://cn.vuejs.org/guide/built-ins/transition.html#transition-classes) 会在适当的时机被添加和移除。
-2. 如果有作为监听器的 [JavaScript 钩子](https://cn.vuejs.org/guide/built-ins/transition.html#javascript-hooks)，这些钩子函数会在适当时机被调用。
-3. 如果没有探测到 CSS 过渡或动画、也没有提供 JavaScript 钩子，那么 DOM 的插入、删除操作将在浏览器的下一个动画帧后执行。
-
-#### 1. 基于css的过渡效果
+基于css的过渡效果：
 
 一共有 6 个应用于进入与离开过渡效果的 CSS class。
 
 
 ![Alt text](image-42.png)
 
+所有的动画过渡的前提条件，该值一定是个数值，只有数才可以过渡
+
+
+
+
+
+为过渡效果命名：
+
+我们可以给 `<Transition>` 组件传一个 `name` prop 来声明一个过渡效果名：
+
+````html
+<Transition name="fade">
+  ...
+</Transition>
+````
+
+```css
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+```
+
+
+
+CSS 的 transition：
+
+`<Transition>` 一般都会搭配[原生 CSS 过渡](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Transitions/Using_CSS_transitions)一起使用，
+
+
+
+css的Animate：
+
+[原生 CSS 动画](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Animations/Using_CSS_animations)和 CSS transition 的应用方式基本上是相同的，只有一点不同，那就是 `*-enter-from` 不是在元素插入后立即移除，而是在一个 `animationend` 事件触发时被移除。
+
+对于大多数的 CSS 动画，我们可以简单地在 `*-enter-active` 和 `*-leave-active` class 下声明它们。
+
+
+
+基于javascript钩子
+
+````html
+<Transition
+  @before-enter="onBeforeEnter"
+  @enter="onEnter"
+  @after-enter="onAfterEnter"
+  @enter-cancelled="onEnterCancelled"
+  @before-leave="onBeforeLeave"
+  @leave="onLeave"
+  @after-leave="onAfterLeave"
+  @leave-cancelled="onLeaveCancelled"
+>
+  <!-- ... -->
+</Transition>
+````
+
+````js
+// 在元素被插入到 DOM 之前被调用
+// 用这个来设置元素的 "enter-from" 状态
+function onBeforeEnter(el) {}
+
+// 在元素被插入到 DOM 之后的下一帧被调用
+// 用这个来开始进入动画
+function onEnter(el, done) {
+  // 调用回调函数 done 表示过渡结束
+  // 如果与 CSS 结合使用，则这个回调是可选参数
+  done()
+}
+
+// 当进入过渡完成时调用。
+function onAfterEnter(el) {}
+
+// 当进入过渡在完成之前被取消时调用
+function onEnterCancelled(el) {}
+
+// 在 leave 钩子之前调用
+// 大多数时候，你应该只会用到 leave 钩子
+function onBeforeLeave(el) {}
+
+// 在离开过渡开始时调用
+// 用这个来开始离开动画
+function onLeave(el, done) {
+  // 调用回调函数 done 表示过渡结束
+  // 如果与 CSS 结合使用，则这个回调是可选参数
+  done()
+}
+
+// 在离开过渡完成、
+// 且元素已从 DOM 中移除时调用
+function onAfterLeave(el) {}
+
+// 仅在 v-show 过渡中可用
+function onLeaveCancelled(el) {}
+````
+
+
+
+
 
 ### 2. transformGroup
 
+为列表中的**多个**元素或组件提供过渡效果。
+
+为了保证动画的运行，`内部子节点需要有独立的key`
+
+默认情况下，`<TransitionGroup>` 不会渲染一个容器 DOM 元素，但是可以通过 `tag` prop 启用。
+
+
+
 ### 3. keep-alive
+
+缓存包裹在其中的动态切换组件。
+
+````vue
+<KeepAlive>
+  <component :is="view"></component>
+</KeepAlive>
+````
+
+
+
+
+
+
 
 ### 4. teleport
 
+将其插槽内容渲染到 DOM节点 中的另一个位置。
+
+teleport翻译过来是传送的意思，意思将其插槽内容移动到指定位置
+
+````tsx
+interface TeleportProps {
+  /**
+   * 必填项。指定目标容器。
+   * 可以是选择器或实际元素。
+   */
+  to: string | HTMLElement
+  /**
+   * 当值为 `true` 时，内容将保留在其原始位置
+   * 而不是移动到目标容器中。
+   * 可以动态更改。
+   */
+  disabled?: boolean
+}
+````
+
+指定目标容器：
+
+template
+
+```vue
+<Teleport to="#some-id" />
+<Teleport to=".some-class" />
+<Teleport to="[data-teleport]" />
+```
+
+有条件地禁用：
+
+template
+
+```vue
+<Teleport to="#popup" :disabled="displayVideoInline">
+  <video src="./my-movie.mp4">
+</Teleport>
+```
+
+应用场景：常常用于实现弹出框，模态框等等这种需要在页面中body下展示的内容
+
+在element plus源码中就是通过这种方式实现的（packages/components/dialog/src/dialog.vue）
+
+![Alt text](image-43.png)
+
+
+
+
+
 ### 5. suspense
+
+`Suspense` 是一个用于处理异步操作（如数据加载）的特性，它在 Vue 3 中引入，旨在改善用户体验。它允许您在异步操作完成之前显示占位内容，以防止页面出现空白或加载指示器。一旦异步操作完成，`Suspense` 将自动切换到实际内容，提供了更好的用户体验。
+
+
+
+`Suspense` 主要用于以下情况：
+
+1. 异步组件加载：当您的应用需要在渲染组件之前等待异步组件加载完成时，可以使用 `Suspense`。
+2. 数据加载：当您需要等待异步数据加载完成后再渲染组件，以避免渲染空白或加载指示器时，可以使用 `Suspense`。
+
+
+
+在进行数据加载的时候，如果在子组件中使用了顶级await，需要在跟组件中使用suspense组件
+
+
+
+suspense的好处不仅可以帮助处理异步操作，还可以协调整个应用程序上的加载状态，包括所有深层嵌套的组件，而不是像一个爆米花用户界面一样，到处都是 loading
+
+
+
+
 
 
 
 ## 36. v-for和v-if的优先级
 
+vue2中和vue3中的优先级不一样
+
+在vue2中v-for的优先级大于v-if
+
+在vue3中的v-if的优先级要大于v-for
+
+
+
+不过最好不要同时使用v-if和v-for
+
+在vue2中如果页面不展示的话，会需要花费更多的性能创建一个不需要展示的节点，vue2中建议使用计算属性来避免这个问题，在计算属性中过滤出要展示的数据
+
+
+
+虽然在vue3中的优先级v-if要大于v-for，那是不是就可以解决vue2中存在的多余性能消耗的问题，但是官方团队仍然不建议一起使用，如果一起使用的话，vue会报错，官方团队建议讲v-for移动到元素容器上，报错原因是v-if的优先级要高于v-for，v-if时要使用到v-for中的变量，当v-if判断的时候，会获取不到数据，转而进行报错。
 
 
 
 
-## 37.v-for为什么要加key
 
 
 
+## 37. v-for为什么要加key
 
+在vue中，v-for中如果没有添加key，默认会将key值设置为当前的索引。
 
-## 38. vue3为什么比vue2快
+加入唯一标识key是为了保证循环的时候，当数据发生变化的，高效的完成diff算法
 
+在diff算法中，通过对比两个节点是否相同的时候，依托的就是节点的类型，和key
 
-
-
-
-## 39. @ 指令的实现原理
+比如在v-for中循环一个div，因为没有添加key，默认的话，会使用当前的索引值进行作为key值，后续如果数据发生改变，并且每个数据所对应的索引值没有发生变化的话，那是完全没问题的，这只是理想状态下，如果当响应式的数据内部进行换位置的时候，如果还是使用的index索引值来作为key值得时候，当数据发生改变，会进行diff算法，那么这时候会造成比对的问题，会导致两个本身不同的节点，因为换了位置，索引值误判，会导致这两个节点是同一个节点。会对后续的diff算法造成性能的问题。
 
 
 
@@ -2527,17 +2686,69 @@ interface TransitionProps {
 
 ## 40.  单向数据流的原因
 
+vue的单向数据流是指数据在父子组件之间单向传递的过程，在vue中，数据流向只能由父组件流向子组件，不能反向流动
 
 
 
 
-## 41. @ v-model的实现原理
+
+具体来说，当父组件向子组件传一个响应式数据得时候，该数据只能在父组件中进行修改，而子组件只有一个可读的权利，
+
+子组件通过props来接收数据并进行使用，这种传递方式是单向的，子组件无法直接修改父组件的数据，而是通过触发事件来
+
+通知父组件来进行数据的修改，
+
+
+
+
+
+这种单向数据流具有以下几个优点：
+
+数据流清晰可控：父组件的数据在传递给子组件的时候，可以明确知道组件的来源，
+
+提高代码可维护性： 单向数据流可以让组件之间的关系清晰，当数据发生问题的时候，能精准的之后问题出现在什么地方。
+
+避免数据混乱： 因为数据只能单项的流动，可以避免子组件意外的修改数据，从而避免数据混乱
+
+
+
+
+
+
+
+
+
+
+
+## 41.  v-model的实现原理
+
+首先v-model不仅可以作用在input元素上，还可以作用到组件上
+
+在作用在input上其实这就是一个语法糖，在input上使用v-bind绑定一个响应式数据，然后input事件中可以监听到数据的修改，再把最新值作用到响应式数据上，这就是v-model的作用在input上的实现原理
+
+
+
+当作用到组件上的时候，其实也是一个语法糖，当没有使用v-model的时候，其实上是通过props属性获取到父组件传递的modelValue值，然后用另一个变量暂存，当数据发生改变的时候，会借助emit，向上传递一个update:modelvalue事件，将数据传递给父组件
+
+
+
+这就是v-model完整的一个实现流程。
+
+
+
+
+
+
 
 
 
 
 
 ## 42. 启动程序的时候，vue单文件初始化的流程
+
+
+
+
 
 
 
@@ -2612,39 +2823,156 @@ MPA的缺点：页面切换慢，用户体验不好
 
 
 
-
-
-
-
-
 ## 44. vue中的三种Effect，以及作用是什么
 
+三者的区别在于effect执行的时机不同
 
+watcheffect内的副作用函数会在dom渲染之前运行，此时进行依赖收集，其实也就是watcheffect函数的第二个参数的默认值为pre
 
+watchSyncEffect的依赖收集为dom渲染的时候
 
-
-## 45. hook是什么
-
-
-
-
-
-## 46. @ 什么是异步组件，以及实现原理
+watchPostEffect执行的时机为dom渲染之后
 
 
 
 
 
-## 47. 模板的编译流程
+
+
+watchEffect
+
+`【官方解释】`立即运行一个函数，同时响应式地追踪其依赖，并在依赖更改时重新执行。
+
+watchEffect内部会进行自动依赖收集，当依赖源发生改变的时候，会自动运行其代码，但是在依赖收集的时候，如果effect内部运行异步代码的时候，他只能收集同步的依赖
+
+
+
+
+
+第一个参数：（必传）effect 函数，收集依赖，在组件初始化时立即执行一次。
+
+并且 effect 函数可以接受一个 onInvalidate 函数参数，该参数执行并传入一个 callback ，每次监听回调执行前都会执行该 callback。
+
+第二个参数对象（非必传）： flush 、 onTrack 、 onTrigger。『onTrack 、 onTrigger』只能在开发模式下工作。
+
+- flush： 跟 watch() 的flush 完全一致，『 'pre' | 'post' | 'sync' 』默认：'pre'。
+- onTrack：跟踪之前会触发该函数，收集了多少个依赖就触发多少次，返回对应依赖信息。
+- onTrigger：依赖更改就触发执行，同步的，没有缓冲回调。
+
+
+
+
+
+
+
+## 46. 什么是异步组件，以及实现原理
+
+异步组件要求将一个组件使用`defineAsyncComponent`包裹
+
+延迟加载得组件就是异步组件：和vue3中有些不同
+
+
+
+
+
+vue3中得异步组件可以进行配置，不配置
+
+````js
+// 没有添加任何配置
+const asyncComponent = defineAsyncComponent(() => import("./components/asyncComp.vue"));
+// 也可以是一个具体得配置对象
+const asyncComponent = defineAsyncComponent({
+  loader: () => import("./components/asyncComp.vue"),
+  delay: 200,
+  timeout: 6000,
+});
+````
+
+当使用了异步组件，即使没有配置具体得配置项，默认delay是200
+
+异步组件的使用场景：
+
+- 懒加载：异步组件允许将组件的加载延迟到需要的时候，这对于优化初始加载时间非常重要。通过只在组件真正需要使用时才加载它们，可以避免一次性加载所有组件而导致性能下降。
+
+- 大型应用程序：当应用程序拥有大量的组件时，同步加载所有组件可能会导致初始加载时间过长。通过使用异步组件，可以分割应用程序的代码，并根据需要按需加载组件，从而提高应用程序的性能。
+
+- 条件加载：某些组件只在特定条件下需要加载，例如在特定路由下才需要加载的组件或在用户执行特定操作后才需要加载的组件。通过使用异步组件，可以根据条件动态加载组件，减少不必要的初始加载。
+
+
+
+异步组件的实现原理：
+
+1. 使用`defineAsyncComponent`定义异步组件，它返回一个包装了异步加载逻辑的组件选项对象。
+
+2. 创建一个占位符组件，在异步组件加载完成前用于渲染。
+
+3. 在占位符组件的渲染函数中处理异步加载逻辑，返回一个`Suspense`组件用于展示加载状态。
+
+4. 使用`import()`动态导入组件模块，返回一个 Promise 对象。
+
+5. 创建异步组件的渲染函数，根据组件的选项对象创建。
+
+6. 替换占位符组件，将异步组件渲染到占位符组件的位置。
+
+
+
+
+
+
+
+## 47. 单文件组件的编译流程
+
+单文件组件中同时包含了`<template> <script> <style>`
+
+浏览器不能识别.vue的文件，这就需要有一个强大的编译器，将单文件组件编译成浏览器能够识别的html，css，js
+
+
 
 
 
  
 
-## 48. @ 插件是什么，以及实现原理
+## 48. 插件是什么，以及实现原理
 
 
 
 
 
-## 49. 什么是SFC，什么是MFC，二者的区别
+## 49. 什么是SFC
+
+单文件组件：将HTML、CSS、JavaScript放在同一个文件中执行
+
+一个 Vue 单文件组件 (SFC)，通常使用 `*.vue` 作为文件扩展名，它是一种使用了类似 HTML 语法的自定义文件格式，用于定义 Vue 组件。一个 Vue 单文件组件在语法上是兼容 HTML 的。
+
+每一个 `*.vue` 文件都由三种顶层语言块构成：`<template>`、`<script>` 和 `<style>`，以及一些其他的自定义块：
+
+````vue
+<template>
+  <div class="example">{{ msg }}</div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      msg: 'Hello world!'
+    }
+  }
+}
+</script>
+
+<style>
+.example {
+  color: red;
+}
+</style>
+
+<custom1>
+  This could be e.g. documentation for the component.
+</custom1>
+````
+
+在单文件组件下：浏览器不能识别这种格式得文件内容，所以会有一个编译器将单文件组件编译
+
+vue下得单文件组件会有一个vue得tempile编译器，将SFC编译成一个javascript文件和css文件
+
