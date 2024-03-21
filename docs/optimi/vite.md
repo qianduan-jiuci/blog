@@ -120,7 +120,7 @@ export default {
 
 
 ## 资源优化
-### 产物分析报告
+### 1. 产物分析报告
 为了能可视化地感知到产物的体积情况，推荐大家用rollup-plugin-visualizer来进行产物分析。安装好之后，就可以直接使用了，使用方式如下:
 ````js
 // 注: 首先需要安装 rollup-plugin-visualizer 依赖
@@ -132,10 +132,13 @@ import { visualizer } from "rollup-plugin-visualizer";
 export default defineConfig({
   plugins: [
     vue(),
-    visualizer({
-      // 打包完成后自动打开浏览器，显示产物体积报告
-      open: true,
-    }),
+      visualizer({
+          gzipSize: true,
+          brotliSize: true,
+          emitFile: false,
+          filename: "test.html", //分析图生成的文件名
+          open: true, //如果存在本地服务端口，将在打包后自动展示
+      }),
   ],
 });
 ````
@@ -145,7 +148,7 @@ export default defineConfig({
 
 从中你可以很方便地观察到产物体积的分布情况，提高排查问题的效率，比如定位到体积某些过大的包，然后针对性地进行优化。
 
-### 资源压缩
+### 2. 资源压缩
 在生产环境中，为了极致的代码体积，我们一般会通过构建工具来对产物进行压缩。具体来说，有这样几类资源可以被压缩处理: JavaScript 代码、CSS 代码和图片文件。
 #### 1. javascript压缩
 在 Vite 生产环境构建的过程中，JavaScript 产物代码会自动进行压缩，相关的配置参数如下：
@@ -179,6 +182,12 @@ info?.name
 
 这就是压缩工具在背后所做的事情，将某些语句识别之后转换成更高级的语法，从而达到更优的代码体积。因此，设置合适的 target 就显得特别重要了，一旦目标环境的设置不能覆盖所有的用户群体，那么极有可能在某些低端浏览器中出现语法不兼容问题，从而发生线上事故。
 
+
+注意：对资源的压缩，在vite中可以借助`vite-plugin-compossion插件`
+vite会对于单个chunk的大小大于500的时候，发出警告，所以在对于压缩的时候，一定要有一个大小的限制，浏览器在对于压缩的文件进行解压，也是需要时间的，如果一个小点文件，也进行了压缩，反而会得不偿失
+
+
+
 #### 2. css压缩
 对于 CSS 代码的压缩，Vite 中的相关配置如下：
 ````js
@@ -194,9 +203,11 @@ export default {
 默认情况下 Vite 会使用 Esbuild 对 CSS 代码进行压缩，一般不需要我们对 cssTarget 进行配置。不过在需要兼容安卓端微信的WebView 时，我们需要将 build.cssTarget 设置为 chrome61，以防止 vite 将 rgba() 颜色转化为 #RGBA 十六进制符号的形式，出现样式问题。
 
 #### 3. 图片压缩
-图片资源是一般是产物体积的大头，如果能有效地压缩图片体积，那么对项目体积来说会得到不小的优化，而在 Vite 中我们一般使用 `vite-plugin-imagemin`来进行图片压缩。
 
-#### 4. 产物拆包
+图片资源是一般是产物体积的大头，如果能有效地压缩图片体积，那么对项目体积来说会得到不小的优化，而在 Vite 中我们一般使用 `vite-plugin-imagemin`来进行图片压缩。
+但是该插件在国内下载很容易出现错误。
+
+### 3. 产物拆包
 一般来说，如果不对产物进行代码分割(或者拆包)，全部打包到一个 chunk 中，会产生如下的问题：
 
 - 首屏加载的代码体积过大，即使是当前页面不需要的代码也会进行加载。
@@ -240,7 +251,7 @@ export default {
 ````
 当然，在函数配置中，我们还需要注意循环引用的问题。
 
-#### 5.按需加载
+### 4.按需加载
 在一个完整的 Web 应用中，对于某些模块当前页面可能并不需要，如果浏览器在加载当前页面的同时也需要加载这些不必要的模块，那么可能会带来严重的性能问题。一个比较好的方式是对路由组件进行动态引入，比如在 React 应用中使用 @loadable/component 进行组件异步加载。
 ````js
 import React from "react";
@@ -293,16 +304,130 @@ function App() {
 export default App;
 ````
 
+### 5. cdn引入
+
+在vite中可以是用`vite-plugin-cdn-import`，也可以通过`vite-plugin-html`
+
+在vite-plugin-cdn-import中，他会默认对一些依赖自动使用cdn，`react react-dom loader vue vue2等等 `
+
+但是也有一个弊端，无法在添加cdn的时候，根据不同的依赖添加资源提示符
+
+````js
+viteCDNPlugin({
+        modules: [
+          {
+            name: "mockjs",
+            var: "mockjs",
+            path: "https://cdn.jsdelivr.net/npm/mockjs@1.1.0/dist/mock.min.js",
+          },
+          {
+            name: "echarts",
+            var: "echarts",
+            path: "https://cdn.jsdelivr.net/npm/echarts@5.4.3-rc.1/dist/echarts.min.js",
+          },
+          {
+            name: "vue-echarts",
+            var: "vueEcharts",
+            path: "https://cdn.jsdelivr.net/npm/vue-echarts@6.6.9/dist/index.umd.min.js",
+          },
+          {
+            name: "element-plus",
+            var: "elementPlus",
+            path: "https://cdn.jsdelivr.net/npm/element-plus@2.6.1/dist/index.full.min.js",
+          },
+          {
+            name: "vue",
+            var: "vue",
+            path: "https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.min.js",
+          },
+        ],
+      }),
+````
+
+在vite环境下，最好使用esm的模式，第一内容更小，第二浏览器原生支持
+
+
+
+`vite-plugin-html`支持直接往html中写入内容
+
+````js
+createHtmlPlugin({
+      minify: true,
+      inject: {
+        data: {
+          vuescript: '<script src="https://cdn.jsdelivr.net/npm/vue@3.2.25"></script>',
+          demiScript: '<script src="//cdn.jsdelivr.net/npm/vue-demi@0.13.7"></script>',
+          elementPlusScript: `
+            <link href="https://cdn.jsdelivr.net/npm/element-plus@2.2.22/dist/index.min.css" rel="stylesheet">
+            <script src="https://cdn.jsdelivr.net/npm/element-plus@2.2.22/dist/index.full.min.js"></script>
+          `,
+          echartsSciprt: '<script src="https://cdn.jsdelivr.net/npm/echarts@5.0.2/dist/echarts.min.js"></script>'
+        }
+      }
+    }),
+````
+
+
+
+
+
+### 6. tree-shaking
+
+ES Module原生支持tree-shaking
+
+需要保证使用vite的情况下，最好使用ESM模块化
+
+
+
+### 7. 对路由使用懒加载
+
+使用路由懒加载的好处在于，在使用SPA模式下，在进行首页渲染的时候，只会加载当前路由所对应组件进行渲染，在一定程度上可以加快FCP
+
+````tsx
+const routes: Array<RouteRecordRaw> = [
+  {
+    path: "/",
+    name: "home",
+    redirect: "/index",
+    component: () => import("@/views/HomeView.vue"),
+    children: [
+      {
+        path: "/index",
+        name: "index",
+        component: () => import("@/views/index/index.vue"),
+      },
+    ],
+  },
+];
+````
+
+项目
+
+
+
+### 8. 对于特别大的图片
+
+一方面可以使用图片的压缩，但是这个插件`vite-plugin-imagemin`在国内不好下载，针对于比较大的图片可以使用渐进式图片（先给出一个低帧率的图片，然后当图片全部加载出来之后，再用原图替换）
+
+另一方面可以使用webp格式的图片，同等质量下体积比png、jpg 格式小很多。
+
+
+
+### 9. 将重复的代码进行解耦模块化复用
+
+将同等逻辑的内容， 进行复用，同时不仅可以减少原有代码的体积，还能养成好的编程习惯。
+
+业务代码是最不能体现出一个人的水平的。
+
+
+
 
 
 ## 预渲染优化
+
 预渲染是当今比较主流的优化手段，主要包括`服务端渲染(SSR)`和`静态站点生成(SSG)`这两种技术。
 
 在 SSR 的场景下，服务端生成好完整的 HTML 内容，直接返回给浏览器，浏览器能够根据 HTML 渲染出完整的首屏内容，而不需要依赖 JS 的加载，从而降低浏览器的渲染压力；而另一方面，由于服务端的网络环境更优，可以更快地获取到页面所需的数据，也能节省浏览器请求数据的时间，同时也完成了对SEO的优化。
 
 而 SSG 可以在`构建阶段生成完整的 HTML 内容`，它与 SSR 最大的不同在于 `HTML 的生成在构建阶段完成，而不是在服务器的运行时`。`SSG 同样可以给浏览器完整的 HTML 内容，不依赖于 JS 的加载`，可以有效提高页面加载性能。不过相比 SSR，SSG 的内容往往动态性不够，适合比较静态的站点，比如文档、博客等场景。
 
-
-## 总结
-
-主要围绕vite项目的性能优化主题，从网络优化，资源优化和预渲染优化三个维度了解一些项目中常用的优化手段； 在网络优化层面，使用Http2、DNS预解析，preload/prefetch/precontented这些优化手段，在资源优化手段，从构建产物的生成，以及分析产物的体积并对不同的文件进行不同的处理，通过拆包处理，资源压缩，按需加载等手段，同时在预渲染优化层面，通过SSR和SSG优化
