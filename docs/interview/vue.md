@@ -1084,8 +1084,6 @@ export default {
 
 vue3
 
-
-
 ````vue
 <script setup>
 import child from './child.vue'
