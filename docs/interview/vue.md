@@ -239,7 +239,7 @@ function effect(fn){
     const _effect = () {
         currentEffect = _effect;
         fn()
-        curentEffect = null;
+        curentEffect = null;  
     }
     _effect()
 }
@@ -254,7 +254,9 @@ effect(() => {
 
 ````
 
-target->key-dep
+  
+
+target->key-dep      
 
 `effect`：`属性改变`带来的副作用函数；
 
@@ -1868,10 +1870,11 @@ toRef(1)
 
 
 
-注意：toRef生成的ref和直接生成的ref是不一样的
+注意：toRef生成的ref和直接生成的是不一样的
 
 ````js
 const state = ref({
+    　
     foo: '123'
 })
 

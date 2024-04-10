@@ -12,6 +12,12 @@ sass --version：查看版本
 
 sass -i：执行sass代码
 
+sass style.scss:style.css --watch: 将style的scss文件编译后style的css文件，并监听文件的改变
+
+
+
+
+
 
 
 
@@ -221,6 +227,8 @@ nav ul {
 
 
 
+
+
 注意： `如果继承了一个属性，那么也会继承该属性的所有子选择器`。
 
 
@@ -262,6 +270,89 @@ nav ul {
 
 
 ````
+
+
+
+
+
+那么什么时候需要使用继承呢？
+
+````css
+.tip {
+    margin: 1em 0;
+    font-size: 0.8em;
+    opacity: 0.8;
+    text-decoration: underline;
+}
+.tip-warning {
+    margin: 1em 0;
+    font-size: 0.8em;
+    opacity: 0.8;
+    text-decoration: underline;
+    color: orange;
+}
+.tip-error {
+    margin: 1em 0;
+    font-size: 0.8em;
+    opacity: 0.8;
+    text-decoration: underline;
+    color: red;
+}
+````
+
+
+
+就观察这么一种特点：看这些选择器之间的关系（这是一些关于消息的选择器）警告是不是消息的一种，错误是不是也是消息的一种，就跟小狗是动物的一类，柯基也是小狗的其中一类。
+
+
+
+当我们可以使用这样的关系来描述一个对象关系的时候，在面向对象的领域里面，就可以用继承关系，对比到css也是一样的道理。当我们观察到其中的某些样式，是其中一个样式的某种特殊情况的时候，他们就会存在一个这样的继承关系。只是在纯css中，无法用语法来表达这个继承关系，但是在sass中是可以的。使用@extend
+
+
+
+````scss
+.tip {
+    margin: 1em 0;
+    font-size: 0.8em;
+    opacity: 0.8;
+    text-decoration: underline;
+}
+.tip-warning {
+    @extend .tip;
+    color: orange;
+}
+.tip-error {
+ 	@extend .tip;
+    color: red;
+}
+````
+
+
+
+这样的话，在最终编译的结果里面，会将使用继承的样式进行一个联合。
+
+````css
+.tip,.tip-warning,.tip-error {
+    margin: 1em 0;
+    font-size: 0.8em;
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+.tip-warning {
+    color: orange;
+}
+
+.tip-error {
+    color: red;
+}
+````
+
+
+
+对于这种情况，完全也可以使用混合来完成，但是会导致编译后文件的体积变大，而使用继承之后，有效降低了编译过后文件的体积。
+
+
 
 
 
@@ -327,11 +418,141 @@ a {
 
 由此可以看出并不会发出网络请求，同时还是编译时态。
 
+使用这种scss扩展的@import这种模块化，本质上是存在问题的
+
+- 混淆：scss的@import和css的@import使用同一个关键字，其区别就是有没有url，同一个关键字极易混淆，从语言设计的角度来说不好。
+- 污染：在开发过程中会抽离很多的scss模块，不同的scss模块可能会定义不同的scss变量，这些变量就极易导致命名冲突
+
+````scss
+// a.scss
+$color: #fff;
+````
+
+````scss
+// b.scss
+$color: cyan;
+````
+
+````scss
+@import "./a";
+@import './b';
+body {
+    color: $color
+}
+````
+
+这就造成了污染的问题，命名冲突造成的问题，在开发过程中甚至不会报错，这就会把问题遗留到运行时态。
+
+- 私有：scss没有私有的变量，他所有的变量都可以从外部进行访问，不像在js中，如果外部想要使用内部模块的变量，那么内部模块需要导出，外部模块需要导入，scss没有私有的变量，比如现在有一个mixin，直到导入这个scss文件，那么就可以直接使用这个mixin
+
+
+
+基于这三个主要问题以及一些边角料的问题，scss官方已经不建议使用@import来实现css编译时态的模块化了。
+
+如果说需要编译时态的模块化，那么建议使用@use
+
+
+
+
+
+### @use
+
+
+
+@use解决了上述中@import出现的问题，同时官方已经有相关文档说明：可能在未来几年之内会删除@import这个指令
+
+
+
+1. `混淆问题解决`：@import是css中的指令，而@use是scss中的模块化指令，就不存在混淆的问题。
+
+2. `污染问题解决`：`使用@use导入的模块，是有命名空间的`，通过命名空间才能访问到模块内部的变量，不管该scss模块嵌套的层级有多深，该模块的文件名就是该模块的命名空间。
+
+````scss
+// common.scss
+$color:#f02;
+$bg-color:lightblue;
+````
+
+````scss
+// base.scss
+$color:#f00;
+$bg-color:darkblue;
+````
+
+````scss
+// global.scss
+@use './common.scss';
+@use './base.scss';
+
+body {
+    backgrounod-color:common.$bg-color;
+    color:base.$color;
+}
+````
+
+当使用了@use这种模块化指令之后，即使不同的文件之间存在再多的变量命名的冲突，有了命名空间，就能很大程度的解决了污染的问题。但是问题没有完全解决，看下面的代码：
+
+````scss
+// ./common.scss
+$color:#f02;
+$bg-color:lightblue;
+````
+
+````scss
+// ./base/common.scss
+$color:#f00;
+$bg-color:darkblue;
+````
+
+````scss
+// global.scss
+@use './common.scss';
+@use './base/common.scss';
+
+body {
+    backgrounod-color:?;
+    color:?;
+}
+````
+
+如果是这种情况，不是说命名空间是文件的名称吗，那么这两个文件的名称都是common，也就是说两个命名空间都是common
+
+既然这样，该怎样去使用这两个模块内部的变量呢？这样就会导致冲突了呀，还是没有解决污染的问题？
+
+
+
+解决办法：scss早都考虑到有这种情况，所以scss提供了`自定义命名空间`
+
+`在使用@use进行导入的时候，提供 as 关键字来修改该模块的命名空间`
+
+````scss
+// global.scss
+@use './common.scss' as common;
+@use './base/common.scss' as base;
+
+body {
+   	backgrounod-color:common.$bg-color;
+    color:base.$color;
+}
+````
+
+自定义命名空间取值可以取为`*`，但是如果这样的话，就和@import一样了，那就没有任何命名空间了，还是会存在污染的问题。`十分不建议这样写`
+
+
+
+
+
+3. `私有变量问题解决`：把变量变为模块内部私有的变量，给变量加一个`横杠-`或者`下划线(_)`，通过命名来进行约束，本身这种下划线的这种命名规范就是表示内部私有的，前端里面基本上是约定俗成的命名规范了。通过这个约定来完成私有变量的定义。并且在模块外去使用模块内部的变量的时候，会进行报错`Undefine Variable`
+
+
+
+
+
+
+
 
 
 ### partials部分
-
-
 
 ​	它可以让我们在一个scss文件里面去导入另外的scss文件，scss会把他们编译到一个css文件，这样呢，就可以把一个项目中的css文件，分割成很多小的scss部分，这些小的部分就是partials，在scss中，会以一个下划线开头，这样呢，scss就会知道这些partials都是一个scss小的一部分，他就不会去进行额外的http请求。同时在进行导入的时候，可以省略掉前面的_
 
@@ -359,10 +580,9 @@ scss中的注释可以分为单行注释，多行注释，强制注释
 区别就是不同类型的注释，最终在编译的时候结果不同
 
 - 单行注释，只会在原本文件中展现，不会再最终的编译结果中出现
-
 - 多行注释，会包含在没有压缩的css文件中，如果压缩过后，多行注释也不会存在
-
-- 而强制注释，会在编译前后保持固有的格式，编译和压缩都会保留
+- 强制注释，会在编译前后保持固有的格式，编译和压缩都会保留
+- 文档注释， 在scss中用///表示
 
 ````scss
 // 单行注释
@@ -373,6 +593,9 @@ scss中的注释可以分为单行注释，多行注释，强制注释
 /*！
   * 强制注释
   */
+
+
+/// 文档注释
 ````
 
 
@@ -388,6 +611,8 @@ sass共分为七种数据类型
 - 空值： null
 - 数组：list，用空格或者逗号作为分割符，1px solid #000, Arial, sans-serif, 微软雅黑
 - map，相当于对象的object， （key： value1， key2： value2）
+
+
 
 ### 1. null
 
@@ -511,6 +736,35 @@ type-of((background:#fff, textColor:cyan)) // map
 
 通过调用函数，会返回一个处理过后的值
 
+在新版本的sass里面，不建议直接使用这样的全局函数，全局函数有可能在将来会被移除掉。
+
+像这些相关的函数，比如颜色函数，字符串函数，数学函数，这些它都放置到了各自的模块中（内置模块），就有点类似于js的模块化开发
+
+就比如node环境里面，路径相关的函数在path模块，文件操作的函数在fs模块，网络请求相关的在http模块
+
+要使用这些函数，需要导入内置模块
+
+- 数学函数：@use "sass:math";
+- 颜色函数：@use "sass:color";
+
+导入内置模块之后，要访问函数要通过命名空间的方式进行导入：
+
+````scss
+@use "sass:math";
+@use "sas:color";
+math.sin();
+math.cos();
+
+color:adjust-hue();
+color:opacity()
+````
+
+
+
+
+
+
+
 ### 1. 数字函数
 
 - abs(): 返回一个数字的绝对值
@@ -592,6 +846,8 @@ hsl(270, 80%, 50%)：色相值，饱和度，亮度
 - join()： 将多个列表合并成一个列表。同时可以在最后一个参数中设置新字符串的间隔符号，如果是space是空格，如果是comma则是逗号
 
 ### 5. map
+
+
 
 map类型的数据为一个键值对
 
@@ -730,8 +986,6 @@ $columns: 4;
 就类似于js的`for(let i = 1 ; i < 4; i++){}`
 
 而第一种就类似于js的`for(let i = 1 ; i <= 4; i++){}`
-
-
 
 
 
@@ -1007,7 +1261,7 @@ $current-theme: "dark";
 }
 ````
 
-## 19. @warn 和 @error
+## 19. @warn 和 @error @debug
 
 这两种指令用于在scss中展示问题
 
@@ -1029,3 +1283,234 @@ body {
 }
 ````
 
+通过 `@debug <expression>` 可以很方便地在控制台打印出表达式返回的值。
+
+```scss
+@debug "1 + 1 = #{1 + 1}"; // 1 + 1 = 2
+```
+
+
+
+
+
+
+
+## 20. 实例
+
+### 示例一：通过sass简化媒体查询
+
+````css
+.header {
+  display: flex;
+  width: 100%;
+}
+
+@media (min-width:320px) and (max-width: 480px) {
+   .header {
+    height: 50px;
+   }
+}
+
+
+@media (min-width:481px) and (max-width: 768px) {
+  .header {
+   height: 60px;
+  }
+}
+
+
+@media (min-width:769px) and (max-width: 1025px) {
+  .header {
+   height: 70px;
+  }
+}
+
+
+@media (min-width:1025px) and (max-width: 1200px) {
+  .header {
+   height: 80px;
+  }
+}
+
+@media (min-width:1201px)  {
+  .header {
+   height: 90px;
+  }
+}
+````
+
+这是使用css来实现的媒体查询代码，这还只是一个header的媒体查询，如果要做成一个网站，那他的媒体查询可是很夸张的，而且后期进行代码维护也很恶心。
+
+接下来就用sass来进行简化
+
+````scss
+$pbmaps: (
+  'phone': (320px, 480px),
+  "pad": (481px, 768px),
+  "notepad": (769px, 1024px),
+  "desktop": (1025px, 1200px),
+  "tv": 1201px
+);
+
+
+@mixin responseTo($pointbreakName) {
+  $bp:map-get($pbmaps,$pointbreakName);
+  @if type-of($bp) == 'list' {
+    $min: nth($bp,1);
+    $max: nth($bp, 2);
+    @media (min-width: $min) and (max-width:  $max) {
+      @content;
+   }
+  }@else {
+    @media (min-width:$bp)  {
+      @content;
+   }
+  }
+};
+
+.header {
+  display: flex;
+  width: 100%;
+  @include responseTo('phone') {
+    height: 50px;
+  };
+  @include responseTo('pad') {
+    height: 60px;
+  };
+}
+````
+
+当然也可以利用sass的模块化，将这个map和mixin提取到模块内部，然后在使用的时候，只需要导入进来即可
+
+利用sass，如果说以后需要对屏幕的断点有了变化，那么只需要修改这个map对象即可。
+
+
+
+利用模块化将混合和map对象提取。
+
+````scss
+// media.scss 媒体查询的scss文件
+@use "./common/mediamixin.scss" as media;
+
+.header {
+  display: flex;
+  width: 100%;
+  @include media.responseTo('phone') {
+    height: 50px;
+  };
+  @include media.responseTo('pad') {
+    height: 60px;
+  };
+}
+
+````
+
+````scss
+/// common/mediamixin.scss文件，用_声明的pbmaps是该文件的内部变量，外部无法访问
+
+$_pbmaps: (
+  'phone': (320px, 480px),
+  "pad": (481px, 768px),
+  "notepad": (769px, 1024px),
+  "desktop": (1025px, 1200px),
+  "tv": 1201px
+);
+
+
+@mixin responseTo($pointbreakName) {
+  $bp:map-get($_pbmaps,$pointbreakName);
+  @if type-of($bp) == 'list' {
+    $min: nth($bp,1);
+    $max: nth($bp, 2);
+    @media (min-width: $min) and (max-width:  $max) {
+      @content;
+   }
+  }@else {
+    @media (min-width:$bp)  {
+      @content;
+   }
+  }
+};
+````
+
+
+
+
+
+
+
+
+
+### 示例二：通过sass实现星空效果
+
+
+
+
+
+
+
+
+
+## 21. 工程化处理
+
+### 1. 注入全局变量
+
+在某些情况下，会将一些变量提取到一个文件中，然后再需要使用变量的时候进行导入，但是每个SFC中都需要导入，这就比较繁琐了，这就需要我们再每个文件自动导入这个scss文件
+
+
+
+
+
+再webpack中，因为webpack不能处理css文件，需要使用各种loader
+
+再进行全局变量注入的时候，需要去查找相应的loader： sass-loader
+
+再sass-loader中进行配置additionalData选项导入
+
+````js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.s[ac]ss$/i,
+        use: [
+          'style-loader',
+          'css-loader',
+          {
+            loader: 'sass-loader',
+            options: {
+              additionalData: `@use '~/assets/scss/variable' as *;`,
+            },
+          },
+        ],
+      },
+    ],
+  },
+};
+````
+
+通过这样配置，会在每个使用scss的文件中，都导入这么一句话`@use "~/assets/scss/variable" as * ;`
+
+然后就可以使用内部的变量
+
+
+
+
+
+vite因为内置了对所有资源的处理，所以，vite中没有loader的概念，但是vite会暴露出css这个属性，通过这个属性，就可以进行一些关于预处理器的配置，然后还是在additionalData中进行配置
+
+````js
+export default defintConfig(({command,mode})=>{
+    css: {
+      // css预处理器
+      preprocessorOptions: {
+        scss: {
+          // charset: false,
+          additionalData: `@use '~/assets/scss/variable' as *;`,
+        },
+      },
+    },
+})
+````
+
+效果和上述的效果一样。
